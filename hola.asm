@@ -9,6 +9,16 @@ bdos:
 
 	org 100H
 
+	if defined CPM86
+	; Install a call to bdos in the cp/m bdos call address
+	ld a,0CDh
+	ld (5),a
+	ld a,0E0h
+	ld (6),a
+	ld a,0C3h
+	ld (7),a
+	endif
+
 	ld bc,2565
 ;	scf
 	ccf

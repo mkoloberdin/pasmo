@@ -4,6 +4,9 @@
 ;	Revista "El Ordenador Personal" num 57, marzo 1987
 ;	Autor: L. Suárez
 
+; Adaptación para posibilitar su ensamblado para CP/M 86
+; con pasmo por Julian Albo.
+
 ;El programa funciona como la orden TYPE de CPM, excepto que se
 ;detiene cada vez que se escriben 24 líneas de pantalla, esperando por la
 ;pulsación de cualqier tecla.
@@ -22,7 +25,10 @@ FIL	EQU 24	; Número de filas de pantalla.
 COL	EQU 80	; Número de columnas de pantalla.
 
 TASEC	EQU 128	; Tamaño de un sector.
+
+	if ! defined CPM86
 TAPILA	EQU 50	; Tamaño de la pila, o stack.
+	endif
 
 CMDBUF	EQU 0080H	; Buffer del CP/M para órdenes.
 DFTFCB12	EQU 0068H
@@ -37,8 +43,19 @@ RECIB	EQU 0FFH	; Para indicar recibir desde teclado.
 
 	ORG 100H
 
+	if ! defined CPM86
 	LD (STACK), SP	; Resguardo del stack.
 	LD SP, PILA	; nuevo stack para programa.
+	else
+	; Install a call to bdos in the cp/m bdos call address
+	ld a,0CDh
+	ld (5),a
+	ld a,0E0h
+	ld (6),a
+	ld a,0C3h
+	ld (7),a
+	endif
+
 	CALL PANCR	; Cursor a nueva línea.
 	LD A, (CMDBUF)	; Num. de caracteres de la
 	CP 2		; orden inicial
@@ -47,7 +64,9 @@ RECIB	EQU 0FFH	; Para indicar recibir desde teclado.
 	LD B, 24	; Resto del FCB.
 INI1:	LD (HL), NULO	; relleno con ceros.
 	INC HL
+
 	DJNZ INI1
+
 	LD DE, DFTFCB	; Dirección del FCB del
 	LD A, OPEN	; archivo a abrir.
 	CALL CPM	; Sale con A=0FFH si no
@@ -123,7 +142,8 @@ ESCRIB:	LD E, (HL)	; Sí, tomar de nuevo el mismo
 	JP NZ, LEER	; Sí, es HL>DE.
 	LD A, L		; Puesto que H=D ver L y E.
 	CP E
-	JR C, ESC1	; No, ya que HL<DE.
+	;JR C, ESC1	; No, ya que HL<DE.
+	JP C, ESC1	; No, ya que HL<DE.
 	JP LEER		; Como HL>=DE, leer otro
 			; sector del archivo.
 
@@ -151,18 +171,33 @@ ERROR:	LD HL, CMDBUF	; CP/M deja allí la orden.
 ESORD1:	LD E, (HL)	; los toma uno a uno, y los
 	CALL SALPAN	; saca a pantalla.
 	INC HL
+
 	DJNZ ESORD1
+
 FINAL0:	LD E, '?'	; Más una interrogación, y
 	CALL SALPAN
 FINAL:	CALL PANCR	; pasa a una línea más abajo.
+
+	if ! defined CPM86
 	LD SP, (STACK)	; Recupera el stack original,
 	RET		; y termina el programa.
+	else
+	ld c, 0
+	call BDOS
+	endif
 
+	if ! defined CPM86
 STACK:	DS 2		; Para guardar el stack.
-
 PILA	EQU $ + TAPILA	; Comienzo stack propio.
 DMASRC	EQU PILA + 1	; Comienzo almacén sector.
+
+	else
+
+DMASRC	EQU $
+
+	endif
+
 FINDMA	EQU DMASRC + TASEC	; Siguiente a último lugar
 				; del almacén del sector.
 
-	END
+this_is_the_end:	END

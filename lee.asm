@@ -80,4 +80,6 @@ mensajeerror	defb 'Error.', 0Dh, 0Ah, '$'
 
 buffer	equ $
 
+	end 100h
+
 ;	End of lee.asm

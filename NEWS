@@ -1,3 +1,40 @@
+	Version 0.5.0
+
+New operators HIGH, LOW, !, &&, || and conditional expression.
+
+New synonims for existent operators: &, |, =, ~, !=, <, >, <=. >=,
+<< and >>.
+
+Brackets can now be used in addition to parenthesis to express
+indirection, and the new bracket only mode allows only the
+brackets to do it.
+
+Now all number formats allow embedded '$'.
+
+Now '$' in identifiers are stripped after checking reserved words.
+
+Warnings on some instructions that looks like errors.
+
+New option to warn when instructions not valid for 8080 are used.
+
+New option to generate 8086 code from z80 sources.
+
+Now can create .tzx and .cdt tape images, with or without basic loader,
+and cp/m 86 cmd files.
+
+The interaction between macros and ifs is better handled, for example
+MACRO, REPT and IRP directives can be used inside IF blocks.
+
+REPT argument now can be 0.
+
+Warnings when expressions that looks like inexistent instructions are
+used.
+
+Debug ouput much more clean and complete.
+
+Source files now are not readed several times.
+
+
 	Version 0.4.0
 
 Debug messages for autolocal blocks where showed even when

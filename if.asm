@@ -1,5 +1,8 @@
 ;	if.asm
 
+	proc
+
+	local v
 v	equ 0
 
 	if v
@@ -12,6 +15,8 @@ v	equ 0
 
 	endif
 
+	endp
+
 	nop
 
-;	End
+;	if.asm finished

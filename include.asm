@@ -1,11 +1,12 @@
+	org 100h
 ;	include.asm
 
-	org 100h
-
 	nop
-
 	include if.asm
-
 	halt
+	include if.asm
+	ex de,hl
+	exx
+	ex af, af'
 
 	end

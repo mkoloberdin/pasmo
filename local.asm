@@ -8,6 +8,8 @@ conout	equ 2
 
 	jp hola
 
+exit	db "Hello, local world\r\n", 0
+
 showtext	proc
 	local hola, exit
 
@@ -29,7 +31,5 @@ exit	ret
 hola	ld hl, exit
 	call showtext
 	jp 0
-
-exit	db "Hello, world\r\n", 0
 
 	end

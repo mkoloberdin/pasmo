@@ -1,5 +1,5 @@
 // pasmo.cpp
-// Revision 7-nov-2004
+// Revision 6-dec-2004
 
 #include "asm.h"
 
@@ -15,14 +15,19 @@ using std::endl;
 
 namespace {
 
-const std::string version ("0.4.0");
+const std::string pasmoversion ("0.5.0");
 
 class Usage { };
 
 enum ObjectFormat {
 	ObjectRaw, ObjectHex, ObjectPrl,
-	ObjectPlus3Dos, ObjectTap, ObjectTapBas,
-	ObjectAmsdos, ObjectMsx
+	ObjectCmd,
+	ObjectPlus3Dos,
+	ObjectTap, ObjectTapBas,
+	ObjectTzx, ObjectTzxBas,
+	ObjectCdt, ObjectCdtBas,
+	ObjectAmsdos,
+	ObjectMsx
 };
 
 std::ostream * perr= & std::cerr;
@@ -44,6 +49,9 @@ int doit (int argc, char * * argv)
 	bool redirecterr= false;
 	bool nocase= false;
 	bool autolocal= false;
+	bool bracketonly= false;
+	bool warn8080= false;
+	bool mode86= false;
 	std::vector <string> includedir;
 	std::vector <string> labelpredef;
 
@@ -56,12 +64,22 @@ int doit (int argc, char * * argv)
 			format= ObjectHex;
 		else if (arg == "--prl")
 			format= ObjectPrl;
+		else if (arg == "--cmd")
+			format= ObjectCmd;
 		else if (arg == "--plus3dos")
 			format= ObjectPlus3Dos;
 		else if (arg == "--tap")
 			format= ObjectTap;
+		else if (arg == "--tzx")
+			format= ObjectTzx;
+		else if (arg == "--cdt")
+			format= ObjectCdt;
 		else if (arg == "--tapbas")
 			format= ObjectTapBas;
+		else if (arg == "--tzxbas")
+			format= ObjectTzxBas;
+		else if (arg == "--cdtbas")
+			format= ObjectCdtBas;
 		else if (arg == "--amsdos")
 			format= ObjectAmsdos;
 		else if (arg == "--msx")
@@ -87,6 +105,14 @@ int doit (int argc, char * * argv)
 			nocase= true;
 		else if (arg == "--alocal")
 			autolocal= true;
+		else if (arg == "-B")
+			bracketonly= true;
+		else if (arg == "--bracket")
+			bracketonly= true;
+		else if (arg == "-8" || arg == "--w8080")
+			warn8080= true;
+		else if (arg == "--86")
+			mode86= true;
 		else if (arg == "-I")
 		{
 			++argpos;
@@ -107,6 +133,8 @@ int doit (int argc, char * * argv)
 			++argpos;
 			break;
 		}
+		else if (arg.substr (0, 1) == "-")
+			throw "Invalid option: " + arg;
 		else
 			break;
 	}
@@ -151,6 +179,12 @@ int doit (int argc, char * * argv)
 		assembler.caseinsensitive ();
 	if (autolocal)
 		assembler.autolocal ();
+	if (bracketonly)
+		assembler.bracketonly ();
+	if (warn8080)
+		assembler.warn8080 ();
+	if (mode86)
+		assembler.set86 ();
 
 	for (size_t i= 0; i < includedir.size (); ++i)
 		assembler.addincludedir (includedir [i] );
@@ -158,7 +192,8 @@ int doit (int argc, char * * argv)
 	for (size_t i= 0; i < labelpredef.size (); ++i)
 		assembler.addpredef (labelpredef [i] );
 
-	assembler.processfile (filein);
+	assembler.loadfile (filein);
+	assembler.processfile ();
 
 	// Generate ouptut file.
 
@@ -176,17 +211,23 @@ int doit (int argc, char * * argv)
 		assembler.emithex (out);
 		break;
 	case ObjectPrl:
+		#if 0
 		{
 			// Assembly with 1 page offset to obtain
 			// the information needed to create the
 			// prl relocation table.
 			Asm assembleroff (assembler);
 			assembleroff.setbase (0x100);
-			assembleroff.processfile (filein);
+			assembleroff.processfile ();
 			// And use this second version to generate
 			// the prl.
 			assembler.emitprl (out, assembleroff);
 		}
+		#endif
+		assembler.emitprl (out);
+		break;
+	case ObjectCmd:
+		assembler.emitcmd (out);
 		break;
 	case ObjectPlus3Dos:
 		assembler.emitplus3dos (out);
@@ -194,8 +235,20 @@ int doit (int argc, char * * argv)
 	case ObjectTap:
 		assembler.emittap (out, headername);
 		break;
+	case ObjectTzx:
+		assembler.emittzx (out, headername);
+		break;
+	case ObjectCdt:
+		assembler.emitcdt (out, headername);
+		break;
 	case ObjectTapBas:
 		assembler.emittapbas (out, headername);
+		break;
+	case ObjectTzxBas:
+		assembler.emittzxbas (out, headername);
+		break;
+	case ObjectCdtBas:
+		assembler.emitcdtbas (out, headername);
 		break;
 	case ObjectAmsdos:
 		assembler.emitamsdos (out, headername);
@@ -267,7 +320,7 @@ int main (int argc, char * * argv)
 	}
 	catch (Usage &)
 	{
-		cerr <<	"Pasmo v. " << version <<
+		cerr <<	"Pasmo v. " << pasmoversion <<
 			" (C) 2004 Julian Albo\n\n"
 			"Usage:\n\n"
 			"\tpasmo [options] source object [symbol]\n\n"

@@ -1,16 +1,14 @@
 // token.cpp
-// Revision 6-nov-2004
+// Revision 8-dec-2004
 
 #include "token.h"
 
 #include <iostream>
-using std::cout;
-using std::cerr;
-using std::endl;
-
 #include <fstream>
+#include <sstream>
 #include <iomanip>
 #include <iterator>
+#include <algorithm>
 #include <map>
 
 #include <ctype.h>
@@ -18,29 +16,21 @@ using std::endl;
 #include <assert.h>
 #define ASSERT assert
 
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::istringstream;
+using std::ostringstream;
+using std::for_each;
+
+
 //*********************************************************
 //		Auxiliary functions and constants.
 //*********************************************************
 
+
 namespace {
 
-std::ostream & hex2 (std::ostream & os)
-{
-	//os << std::hex << std::uppercase <<
-	os.setf (std::ios::uppercase);
-	os << std::hex <<
-		std::setw (2) << std::setfill ('0');
-	return os;
-}
-
-std::ostream & hex4 (std::ostream & os)
-{
-	//os << std::hex << std::uppercase <<
-	os.setf (std::ios::uppercase);
-	os << std::hex <<
-		std::setw (4) << std::setfill ('0');
-	return os;
-}
 
 std::string upper (const std::string & str)
 {
@@ -69,47 +59,31 @@ struct NameType {
 
 #define NT(n) NameType (#n, Type ## n)
 
-const NameType nt []= {
-	// Directives
-	NT (DEFB),
-	NT (DB),
-	NT (DEFM),
-	NT (DEFW),
-	NT (DW),
-	NT (DEFS),
-	NT (DS),
-	NT (EQU),
-	NT (DEFL),
-	NT (ORG),
-	NT (INCLUDE),
-	NT (INCBIN),
-	NT (IF),
-	NT (ELSE),
-	NT (ENDIF),
-	NT (PUBLIC),
-	NT (END),
-	NT (LOCAL),
-	NT (PROC),
-	NT (ENDP),
-	NT (MACRO),
-	NT (ENDM),
-	NT (EXITM),
-	NT (REPT),
-	NT (IRP),
+#define NT_(n) NameType ("." #n, Type_ ## n)
 
+const NameType nt []= {
 	// Operators
 	NT (MOD),
 	NT (SHL),
+	NameType ("<<", TypeShlOp),
 	NT (SHR),
+	NameType (">>", TypeShrOp),
 	NT (NOT),
 	NT (EQ),
 	NT (LT),
 	NT (LE),
+	NameType ("<=", TypeLeOp),
 	NT (GT),
 	NT (GE),
+	NameType (">=", TypeGeOp),
 	NT (NE),
+	NameType ("!=", TypeNeOp),
 	NT (NUL),
 	NT (DEFINED),
+	NT (HIGH),
+	NT (LOW),
+	NameType ("&&", TypeBoolAnd),
+	NameType ("||", TypeBoolOr),
 
 	// Nemonics
 	NT (ADC),
@@ -212,42 +186,86 @@ const NameType nt []= {
 	NT (PO),
 	NT (PE),
 	NT (P),
-	NT (M)
+	NT (M),
+
+	// Directives
+	NT (DEFB),
+	NT (DB),
+	NT (DEFM),
+	NT (DEFW),
+	NT (DW),
+	NT (DEFS),
+	NT (DS),
+	NT (EQU),
+	NT (DEFL),
+	NT (ORG),
+	NT (INCLUDE),
+	NT (INCBIN),
+	NT (IF),
+	NT (ELSE),
+	NT (ENDIF),
+	NT (PUBLIC),
+	NT (END),
+	NT (LOCAL),
+	NT (PROC),
+	NT (ENDP),
+	NT (MACRO),
+	NT (ENDM),
+	NT (EXITM),
+	NT (REPT),
+	NT (IRP),
+
+	// Directives with .
+	NT_ (ERROR),
+	NT_ (WARNING)
 };
 
-bool init_map ()
+class mapiniter {
+	mapiniter ();
+	static mapiniter instance;
+};
+
+mapiniter mapiniter::instance;
+
+mapiniter::mapiniter ()
 {
 	#ifndef NDEBUG
-	bool typeused [TypeXOR + 1]= { false };
+	bool typeused [TypeLastName + 1]= { false };
+	bool checkfailed= false;
 	#endif
 
 	for (const NameType * p= nt;
 		p != nt + (sizeof (nt) / sizeof (nt [0] ) );
 		++p)
 	{
-		tmap [p->str]= p->type;
-		invmap [p->type]= p->str;
+		TypeToken tt= p->type;
 		#ifndef NDEBUG
-		if (p->type <= TypeXOR)
-			typeused [p->type]= true;
+		ASSERT (tt >= TypeFirstName);
+		ASSERT (tt <= TypeLastName);
+		if (typeused [tt] )
+		{
+			cerr << "Type " << tt << " duplicated" << endl;
+			checkfailed= true;
+		}
+		typeused [tt]= true;
 		#endif
+		tmap [p->str]= tt;
+		invmap [tt]= p->str;
 	}
 
 	#ifndef NDEBUG
-	bool checkfailed= false;
-	for (TypeToken t= TypeADC; t <= TypeXOR; t= TypeToken (t + 1) )
-		if (! typeused [t] )
+	for (TypeToken tt= TypeFirstName; tt <= TypeLastName;
+			tt= TypeToken (tt + 1) )
+	{
+		if (! typeused [tt] )
 		{
-			cerr << "Type " << t << " unasigned" << endl;
+			cerr << "Type " << tt << " unasigned" << endl;
 			checkfailed= true;
 		}
+	}
 	ASSERT (! checkfailed);
 	#endif
-
-	return true;
 }
-
-bool map_ready= init_map ();
 
 TypeToken getliteraltoken (const std::string & str)
 {
@@ -258,46 +276,85 @@ TypeToken getliteraltoken (const std::string & str)
 		return TypeUndef;
 }
 
-std::string gettokenname (TypeToken t)
+std::string gettokenname (TypeToken tt)
 {
-	invmap_t::iterator it= invmap.find (t);
+	invmap_t::iterator it= invmap.find (tt);
 	if (it != invmap.end () )
 		return it->second;
 	else
-		return std::string (1, static_cast <char> (t) );
+		return std::string (1, static_cast <char> (tt) );
 }
 
+
 } // namespace
+
 
 //*********************************************************
 //			class Token
 //*********************************************************
 
 Token::Token () :
-	t (TypeUndef)
+	tt (TypeUndef)
 {
 }
 
-Token::Token (TypeToken t) :
-	t (t)
+Token::Token (TypeToken ttn) :
+	tt (ttn)
 {
 }
 
 Token::Token (address n) :
-	t (TypeNumber),
+	tt (TypeNumber),
 	number (n)
 {
 }
 
-Token::Token (TypeToken t, const std::string & s) :
-	t (t),
-	s (s)
+Token::Token (TypeToken ttn, const std::string & sn) :
+	tt (ttn),
+	s (sn)
 {
 }
 
+TypeToken Token::type () const
+{
+	return tt;
+}
+
+namespace {
+
+class addescaped {
+public:
+	addescaped (std::string & str) : str (str)
+	{ }
+	void operator () (char c);
+private:
+	std::string & str;
+};
+
+void addescaped::operator () (char c)
+{
+	unsigned char c1= c;
+	if (c1 >= ' ' && c1 < 128)
+		str+= c;
+	else
+	{
+		str+= "\\x";
+		str+= hex2str (c1);
+	}
+}
+
+std::string escapestr (const std::string & str)
+{
+	std::string result;
+	for_each (str.begin (), str.end (), addescaped (result) );
+	return result;
+}
+
+} // namespace
+
 std::string Token::str () const
 {
-	switch (t)
+	switch (tt)
 	{
 	case TypeUndef:
 		return "(undef)";
@@ -306,18 +363,18 @@ std::string Token::str () const
 	case TypeIdentifier:
 		return s;
 	case TypeLiteral:
-		//return std::string (1, '\'') + s + '\'';
 		return s;
 	case TypeNumber:
-		{
-			std::ostringstream oss;
-			oss << hex4 << number;
-			return oss.str ();
-		}
+		return hex4str (number);
 	default:
-		//return std::string (1, static_cast <char> (t) );
-		return gettokenname (t);
+		return gettokenname (tt);
 	}
+}
+
+address Token::num () const
+{
+	ASSERT (tt == TypeNumber);
+	return number;
 }
 
 std::ostream & operator << (std::ostream & oss, const Token & tok)
@@ -327,131 +384,72 @@ std::ostream & operator << (std::ostream & oss, const Token & tok)
 }
 
 //*********************************************************
-//			class Tokenizer
+//		Tokenizer auxiliary functions.
 //*********************************************************
-
-Tokenizer::Tokenizer (bool nocase) :
-	//hassaved (false)
-	endpassed (0),
-	nocase (nocase)
-{
-}
-
-Tokenizer::Tokenizer (const Tokenizer & tz) :
-	tokenlist (tz.tokenlist),
-	current (tokenlist.begin () ),
-	//hassaved (false)
-	endpassed (0),
-	nocase (tz.nocase)
-{
-}
-
-Tokenizer::Tokenizer (const std::string & line, bool nocase) :
-	//iss (line),
-	//hassaved (false)
-	endpassed (0),
-	nocase (nocase)
-{
-	std::istringstream iss (line);
-
-	// Optional line number ignored.
-	char c;
-	while (iss >> c && isdigit (c) )
-		continue;
-	if (iss)
-		iss.unget ();
-
-	Token tok;
-	while ( (tok= parsetoken (iss) ).type () != TypeEndLine)
-	{
-		tokenlist.push_back (tok);
-		if (tok.type () == TypeINCLUDE || tok.type () == TypeINCBIN)
-		{
-			tokenlist.push_back
-				(Token (TypeLiteral,
-					parseincludefile (iss) ) );
-		}
-	}
-	current= tokenlist.begin ();
-}
-
-Tokenizer::~Tokenizer ()
-{
-}
-
-std::ostream & operator << (std::ostream & oss, const Tokenizer & tz)
-{
-	std::copy (tz.tokenlist.begin (), tz.tokenlist.end (),
-		std::ostream_iterator <Token> (oss, " ") );
-	return oss;
-}
-
-void Tokenizer::push_back (const Token & tok)
-{
-	tokenlist.push_back (tok);
-	current= tokenlist.begin ();
-}
-
-#if 0
-void Tokenizer::putback (const Token & tok)
-{
-	if (hassaved)
-		throw "Internal error in Tokenizer::putback";
-	saved= tok;
-	hassaved= true;
-}
-#endif
-
-Token Tokenizer::gettoken ()
-{
-	#if 0
-	if (hassaved)
-	{
-		hassaved= false;
-		return saved;
-	}
-	#endif
-	if (current == tokenlist.end () )
-	{
-		++endpassed;
-		return Token (TypeEndLine);
-	}
-	else
-	{
-		Token tok= * current;
-		++current;
-		return tok;
-	}
-}
-
-void Tokenizer::ungettoken ()
-{
-	if (endpassed > 0)
-	{
-		ASSERT (current == tokenlist.end () );
-		--endpassed;
-	}
-	else
-	{
-		if (current == tokenlist.begin () )
-			throw "Internal error: Tokenizer underflowed";
-		--current;
-	}
-}
-
-std::string Tokenizer::getincludefile ()
-{
-	Token tok= gettoken ();
-	if (tok.type () != TypeLiteral)
-		throw "Internal unexpected error";
-	return tok.str ();
-}
 
 namespace {
 
 const char unclosed []= "Unclosed literal";
 
-Token parsestringc (std::istringstream & iss)
+Token parseless (std::istream & iss)
+{
+	char c= iss.get ();
+	if (iss)
+	{
+		switch (c)
+		{
+		case '=':
+			return Token (TypeLeOp);
+		case '<':
+			return Token (TypeShlOp);
+		default:
+			iss.unget ();
+			return Token (TypeLtOp);
+		}
+	}
+	else
+		return Token (TypeLtOp);
+}
+
+Token parsegreat (std::istream & iss)
+{
+	char c= iss.get ();
+	if (iss)
+	{
+		switch (c)
+		{
+		case '=':
+			return Token (TypeGeOp);
+		case '>':
+			return Token (TypeShrOp);
+		default:
+			iss.unget ();
+			return Token (TypeGtOp);
+		}
+	}
+	else
+		return Token (TypeGtOp);
+}
+
+Token parsenot (std::istream & iss)
+{
+	char c= iss.get ();
+	if (iss)
+	{
+		switch (c)
+		{
+		case '=':
+			return Token (TypeNeOp);
+		default:
+			iss.unget ();
+			return Token (TypeBoolNotOp);
+		}
+	}
+	else
+		return Token (TypeBoolNotOp);
+}
+
+Token parsestringc (std::istream & iss)
 {
 	std::string str;
 	for (;;)
@@ -534,9 +532,320 @@ Token parsestringc (std::istringstream & iss)
 	}
 }
 
-} // namespace
+Token parsestringasm (std::istream & iss)
+{
+	std::string str;
+	for (;;)
+	{
+		char c= iss.get ();
+		if (! iss)
+			throw unclosed;
+		if (c == '\'')
+		{
+			c= iss.get ();
+			if (! iss)
+				return Token
+					(TypeLiteral, str);
+			if (c != '\'')
+			{
+				iss.unget ();
+				return Token
+					(TypeLiteral, str);
+			}
+		}
+		str+= c;
+	}
+}
 
-Token Tokenizer::parsetoken (std::istringstream & iss)
+Token parsedollar (std::istream & iss)
+{
+	char c;
+	c= iss.get ();
+	if (iss && isxdigit (c) )
+	{
+		std::string str;
+		do
+		{
+			if (c != '$')
+				str+= c;
+			c= iss.get ();
+		} while (iss && (isxdigit (c) || c == '$') );
+		if (str.empty () )
+			throw "Invalid empty hex number";
+		if (iss)
+			iss.unget ();
+
+		unsigned long n;
+		char * aux;
+		n= strtoul (str.c_str (), & aux, 16);
+		if (* aux != '\0')
+			throw "Invalid numeric format";
+		if (n > 0xFFFFUL)
+			throw "Number out of range";
+		return Token (static_cast <address> (n) );
+	}
+	else
+	{
+		if (iss)
+			iss.unget ();
+		return Token (TypeDollar);
+	}
+}
+
+Token parsesharp (std::istream & iss)
+{
+	std::string str;
+	char c= iss.get ();
+	while (iss && (isxdigit (c) || c == '$') )
+	{
+		if (c != '$')
+			str+= c;
+		c= iss.get ();
+	}
+	if (str.empty () )
+		throw "Invalid empty hex number";
+	if (iss)
+		iss.unget ();
+
+	unsigned long n;
+	char * aux;
+	n= strtoul (str.c_str (), & aux, 16);
+	if (* aux != '\0')
+		throw "Invalid numeric format";
+	if (n > 0xFFFFUL)
+		throw "Number out of range";
+	return Token (static_cast <address> (n) );
+}
+
+Token parseampersand (std::istream & iss)
+{
+	char c= iss.get ();
+
+	if (! iss)
+		return Token (TypeBitAnd);
+
+	std::string str;
+	int base= 16;
+	switch (c)
+	{
+	case '&':
+		return Token (TypeBoolAnd);
+	case 'h': case 'H':
+		break;
+	case 'o': case 'O':
+		base= 8;
+		break;
+	case 'x': case 'X':
+		base= 2;
+		break;
+	default:
+		if (isxdigit (c) )
+			str= c;
+		else
+		{
+			iss.unget ();
+			return Token (TypeBitAnd);
+		}
+	}
+	c= iss.get ();
+	while (iss && (isxdigit (c) || c == '$') )
+	{
+		if (c != '$')
+			str+= c;
+		c= iss.get ();
+	}
+	if (str.empty () )
+		throw "Syntax error";
+	if (iss)
+		iss.unget ();
+
+	char * aux;
+	unsigned long n= strtoul (str.c_str (), & aux, base);
+	if (* aux != '\0')
+		throw "Invalid numeric format";
+	if (n > 0xFFFFUL)
+		throw "Number out of range";
+	return Token (static_cast <address> (n) );
+}
+
+Token parseor (std::istream & iss)
+{
+	char c= iss.get ();
+	if (iss && c == '|')
+		return Token (TypeBoolOr);
+	else
+	{
+		if (iss)
+			iss.unget ();
+		return Token (TypeBitOr);
+	}
+}
+
+Token parsepercent (std::istream & iss)
+{
+	char c= iss.get ();
+	if (! iss || (c != '0' && c != '1') )
+	{
+		// Mod operator.
+		if (iss)
+			iss.unget ();
+		return Token (TypeMod);
+	}
+
+	// Binary number.
+
+	std::string str;
+	do {
+		if (c != '$')
+			str+= c;
+		c= iss.get ();
+	} while (iss && (c == '0' || c == '1' || c == '$') );
+	if (iss)
+		iss.unget ();
+
+	unsigned long n;
+	char * aux;
+	n= strtoul (str.c_str (), & aux, 2);
+	if (* aux != '\0')
+		throw "Invalid numeric format";
+	if (n > 0xFFFFUL)
+		throw "Number out of range";
+	return Token (static_cast <address> (n) );
+}
+
+Token parsedigit (std::istream & iss, char c)
+{
+	std::string str;
+	do {
+		if (c != '$')
+			str+= c;
+		c= iss.get ();
+		if (! iss)
+			c= 0;
+	} while (isalnum (c) || c == '$');
+	if (iss)
+		iss.unget ();
+
+	const std::string::size_type l= str.size ();
+	unsigned long n;
+	char * aux;
+
+	// Hexadecimal with 0x prefix.
+	if (str [0] == '0' && l > 1 &&
+		(str [1] == 'x' || str [1] == 'X') )
+	{
+		str.erase (0, 2);
+		if (str.empty () )
+			throw "Invalid hex number";
+		n= strtoul (str.c_str (), & aux, 16);
+	}
+	else
+	{
+		// Decimal, hexadecimal, octal and binary
+		// with or without suffix.
+		switch (toupper (str [l - 1]) )
+		{
+		case 'H': // Hexadecimal.
+			str.erase (l - 1);
+			n= strtoul (str.c_str (), & aux, 16);
+			break;
+		case 'O': // Octal.
+		case 'Q': // Octal.
+			str.erase (l - 1);
+			n= strtoul (str.c_str (), & aux, 8);
+			break;
+		case 'B': // Binary.
+			str.erase (l - 1);
+			n= strtoul (str.c_str (), & aux, 2);
+			break;
+		case 'D': // Decimal
+			str.erase (l - 1);
+			n= strtoul (str.c_str (), & aux, 10);
+			break;
+		default: // Decimal
+			n= strtoul (str.c_str (), & aux, 10);
+		}
+	}
+	if (* aux != '\0')
+		throw "Invalid numeric format";
+
+	// Testing: do not forbid numbers out of 16 bits range,
+	// just truncate it.
+	//if (n > 0xFFFFUL)
+	//	throw "Number out of range";
+
+	return Token (static_cast <address> (n) );
+}
+
+void stripdollar (std::string & str)
+{
+	std::string::size_type n;
+	while ( (n= str.find ('$') ) != std::string::npos)
+		str.erase (1, n);
+}
+
+bool ischarbeginidentifier (char c)
+{
+	return isalpha (static_cast <unsigned char> (c) ) ||
+		c == '_' || c == '?' || c == '@' || c == '.';
+}
+
+bool ischaridentifier (char c)
+{
+	return isalnum (static_cast <unsigned char> (c) ) ||
+		c == '_' || c == '$' || c == '?' || c == '@' || c == '.';
+}
+
+Token parseidentifier (std::istream & iss, char c, bool nocase)
+{
+	std::string str;
+
+	// Check conditional operator.
+	if (c == '?')
+	{
+		str+= '?';
+		c= iss.get ();
+		if (! ischaridentifier (c) )
+		{
+			iss.unget ();
+			return Token (TypeQuestion);
+		}
+	}
+
+	do
+	{
+		// Changed this. Now a $ can be used to create
+		// an identifier with the same name of a
+		// reserved word.
+		//if (c != '$')
+		//	str+= c;
+		str+= c;
+		c= iss.get ();
+	} while (iss && ischaridentifier (c) );
+	if (iss)
+		iss.unget ();
+
+	TypeToken tt= getliteraltoken (str);
+
+	if (tt == TypeUndef)
+	{
+		stripdollar (str);
+		if (nocase)
+			str= upper (str);
+		return Token (TypeIdentifier, str);
+	}
+	else
+	{
+		if (tt == TypeAF && c == '\'')
+		 {
+		 	iss.get ();
+			tt= TypeAFp;
+		 }
+		return Token (tt);
+	}
+}
+
+Token parsetoken (std::istream & iss, bool nocase)
 {
 	char c;
 	if (! (iss >> c) )
@@ -558,274 +867,73 @@ Token Tokenizer::parsetoken (std::istringstream & iss)
 	case '/':
 		return Token (TypeDiv);
 	case '=':
-		return Token (TypeEqual);
+		return Token (TypeEqOp);
+	case '<':
+		// Less or less equal.
+		return parseless (iss);
+	case '>':
+		// Greater or greter equal.
+		return parsegreat (iss);
+	case '~':
+		return Token (TypeBitNotOp);
+	case '!':
+		// Not or not equal.
+		return parsenot (iss);
 	case '(':
 		return Token (TypeOpen);
 	case ')':
 		return Token (TypeClose);
+	case '[':
+		return Token (TypeOpenBracket);
+	case ']':
+		return Token (TypeCloseBracket);
 	case '$':
-		iss >> c;
-		if (iss && isxdigit (c) )
-		{
-			std::string str (1, c);
-			while (iss >> c && isxdigit (c) )
-				str+= c;
-			if (str.empty () )
-				throw "Invalid empty hex number";
-			if (iss)
-				iss.unget ();
-			unsigned long n;
-			char * aux;
-			n= strtoul (str.c_str (), & aux, 16);
-			if (* aux != '\0')
-				throw "Invalid numeric format";
-			if (n > 0xFFFFUL)
-				throw "Number out of range";
-			return Token (static_cast <address> (n) );
-		}
-		else
-		{
-			if (iss)
-				iss.unget ();
-			return Token (TypeDollar);
-		}
-		// break not needed here, only exits the if
-		// with return or throw.
+		// Hexadecimal number.
+		return parsedollar (iss);
 	case '\'':
-		{
-			std::string str;
-			for (;;)
-			{
-				char c= iss.get ();
-				if (! iss)
-					throw unclosed;
-				if (c == '\'')
-				{
-					c= iss.get ();
-					if (! iss)
-						return Token
-							(TypeLiteral, str);
-					if (c != '\'')
-					{
-						iss.unget ();
-						return Token
-							(TypeLiteral, str);
-					}
-				}
-				str+= c;
-			}
-		}
-		// break not needed here, only exits the block
-		// with return or throw.
+		// Classic assembler string literal.
+		return parsestringasm (iss);
 	case '"':
+		// C style string literal.
 		return parsestringc (iss);
 	case '#':
 		// Hexadecimal number.
-		{
-			std::string str;
-			while (iss >> c && isxdigit (c) )
-				str+= c;
-			if (str.empty () )
-				throw "Invalid empty hex number";
-			if (iss)
-				iss.unget ();
-			unsigned long n;
-			char * aux;
-			n= strtoul (str.c_str (), & aux, 16);
-			if (* aux != '\0')
-				throw "Invalid numeric format";
-			if (n > 0xFFFFUL)
-				throw "Number out of range";
-			return Token (static_cast <address> (n) );
-		}
-		// break not needed here, only exits the block
-		// with return or throw.
+		return parsesharp (iss);
 	case '&':
-		// Hexadecimal, octal or binary number.
-		iss >> c;
-		if (! iss)
-			throw "Empty hexadecimal number";
-		{
-			std::string str;
-			int base= 16;
-			switch (c)
-			{
-			case 'h': case 'H':
-				break;
-			case 'o': case 'O':
-				base= 8;
-				break;
-			case 'x': case 'X':
-				base= 2;
-				break;
-			default:
-				if (isxdigit (c) )
-					str= c;
-				else
-					throw "Syntax error";
-			}
-			while (iss >> c && isxdigit (c) )
-				str+= c;
-			if (str.empty () )
-				throw "Syntax error";
-			if (iss)
-				iss.unget ();
-			char * aux;
-			unsigned long n= strtoul (str.c_str (), & aux, base);
-			if (* aux != '\0')
-				throw "Invalid numeric format";
-			if (n > 0xFFFFUL)
-				throw "Number out of range";
-			return Token (static_cast <address> (n) );
-		}
-		// break not needed here, only exits the block
-		// with return or throw.
+		// Hexadecimal, octal or binary number,
+		// or and operators.
+		return parseampersand (iss);
+	case '|':
+		// Or operators.
+		return parseor (iss);
 	case '%':
-		iss >> c;
-		if (! iss || (c != '0' && c != '1') )
-		{
-			// Mod operator.
-			if (iss)
-				iss.unget ();
-			return Token (TypeMod);
-		}
-		// Binary number.
-		{
-			std::string str;
-			//while (iss >> c && (c == '0' || c == '1') )
-			//	str+= c;
-			do {
-				str+= c;
-			} while (iss >> c && (c == '0' || c == '1') );
-
-			// Now this can't occur.
-			//if (str.empty () )
-			//	throw "Invalid empty binary number";
-
-			if (iss)
-				iss.unget ();
-			unsigned long n;
-			char * aux;
-			n= strtoul (str.c_str (), & aux, 2);
-			if (* aux != '\0')
-				throw "Invalid numeric format";
-			if (n > 0xFFFFUL)
-				throw "Number out of range";
-			return Token (static_cast <address> (n) );
-		}
-		// break not needed here, only exits the block
-		// with return or throw.
+		// Binary number or mod operator.
+		return parsepercent (iss);
 	default:
 		; // Nothing
 	}
+
 	if (isdigit (c) )
-	{
-		std::string str;
-		do {
-			if (c != '$')
-				str+= c;
-			c= iss.get ();
-			if (! iss)
-				c= 0;
-		} while (isalnum (c) || c == '$');
-		if (iss)
-			iss.unget ();
-		const std::string::size_type l= str.size ();
-		unsigned long n;
-		char * aux;
+		return parsedigit (iss, c);
 
-		// Hexadecimal with 0x prefix.
-		if (str [0] == '0' && l > 1 &&
-			(str [1] == 'x' || str [1] == 'X') )
-		{
-			str.erase (0, 2);
-			if (str.empty () )
-				throw "Invalid hex number";
-			n= strtoul (str.c_str (), & aux, 16);
-		}
-		else
-		{
-			// Decimal, hexadecimal, octal and binary
-			// with or without suffix.
-			switch (toupper (str [l - 1]) )
-			{
-			case 'H': // Hexadecimal.
-				str.erase (l - 1);
-				n= strtoul (str.c_str (), & aux, 16);
-				break;
-			case 'O': // Octal.
-			case 'Q': // Octal.
-				str.erase (l - 1);
-				n= strtoul (str.c_str (), & aux, 8);
-				break;
-			case 'B': // Binary.
-				str.erase (l - 1);
-				n= strtoul (str.c_str (), & aux, 2);
-				break;
-			case 'D': // Decimal
-				str.erase (l - 1);
-				n= strtoul (str.c_str (), & aux, 10);
-				break;
-			default: // Decimal
-				n= strtoul (str.c_str (), & aux, 10);
-			}
-		}
-		if (* aux != '\0')
-			throw "Invalid numeric format";
+	if (ischarbeginidentifier (c) )
+		return parseidentifier (iss, c, nocase);
 
-		// Testing: do not forbid numbers out of 16 bits range,
-		// just truncate it.
-		//if (n > 0xFFFFUL)
-		//	throw "Number out of range";
+	// Any other case, invalid character.
 
-		return Token (static_cast <address> (n) );
-	}
-	if (isalpha (c) || c == '_' || c == '?' || c == '@' || c == '.')
-	{
-		std::string str;
-		do
-		{
-			if (c != '$')
-				str+= c;
-			c= iss.get ();
-			if (! iss)
-				c= 0;
-		} while (isalnum (c) || c == '_' || c == '$' || c == '?' ||
-			c == '@' || c == '.');
-		if (iss)
-			iss.unget ();
-		TypeToken t= getliteraltoken (str);
-		if (t == TypeUndef)
-		{
-			if (nocase)
-				str= upper (str);
-			return Token (TypeIdentifier, str);
-		}
-		else
-		{
-			if (t == TypeAF && c == '\'')
-			 {
-			 	iss.get ();
-				t= TypeAFp;
-			 }
-			return Token (t);
-		}
-	}
-	//return Token ();
-	std::ostringstream oss;
+	ostringstream oss;
 	oss << "Unexpected character: ";
 	if (c < 32 || c >= 127)
-		oss << '&' << hex2 << int (static_cast <unsigned char> (c) );
+		oss << '&' << hex2 (c);
 	else
 		oss << '\'' << c << '\'';
 	throw oss.str ();
 }
 
-std::string Tokenizer::parseincludefile (std::istringstream & iss)
+std::string parseincludefile (std::istream & iss)
 {
 	char c;
-	while (iss >> c && isspace (c) )
-		continue;
+	iss >> c;
 	if (! iss)
 		throw "Filename required";
 	std::string r;
@@ -834,7 +942,7 @@ std::string Tokenizer::parseincludefile (std::istringstream & iss)
 	case '"':
 		do
 		{
-			iss >> c;
+			c= iss.get ();
 			if (! iss)
 				throw "Invalid file name";
 			if (c != '"')
@@ -844,7 +952,7 @@ std::string Tokenizer::parseincludefile (std::istringstream & iss)
 	case '\'':
 		do
 		{
-			iss >> c;
+			c= iss.get ();
 			if (! iss)
 				throw "Invalid file name";
 			if (c != '\'')
@@ -852,13 +960,189 @@ std::string Tokenizer::parseincludefile (std::istringstream & iss)
 		} while (c != '\'');
 		break;
 	default:
-		r+= c;
-		while (iss >> c && ! isspace (c) )
+		do
+		{
 			r+= c;
+			c= iss.get ();
+		} while (iss && ! isspace (c) );
 		if (iss)
 			iss.unget ();
 	}
 	return r;
 }
+
+std::string parsemessage (std::istream & iss)
+{
+	char c;
+	std::string result;
+	// Message can be empty.
+	if (iss >> c)
+	{
+		do {
+			result+= c;
+			c= iss.get ();
+		} while (iss);
+	}
+	return result;
+}
+
+} // namespace
+
+
+//*********************************************************
+//			class Tokenizer
+//*********************************************************
+
+
+Tokenizer::Tokenizer (bool nocase_n) :
+	current (tokenlist.begin () ),
+	endpassed (0),
+	nocase (nocase_n)
+{
+}
+
+Tokenizer::Tokenizer (TypeToken ttok) :
+	endpassed (0)
+{
+	tokenlist.push_back (Token (ttok) );
+	current= tokenlist.begin ();
+}
+
+Tokenizer::Tokenizer (const Tokenizer & tz) :
+	tokenlist (tz.tokenlist),
+	current (tokenlist.begin () ),
+	endpassed (0),
+	nocase (tz.nocase)
+{
+}
+
+Tokenizer::Tokenizer (const std::string & line, bool nocase_n) :
+	current (tokenlist.begin () ),
+	endpassed (0),
+	nocase (nocase_n)
+{
+	istringstream iss (line);
+
+	// Optional line number ignored.
+	char c;
+	do {
+		c= iss.get ();
+	} while (iss && isdigit (c) );
+	if (iss)
+		iss.unget ();
+
+	Token tok;
+	while ( (tok= parsetoken (iss, nocase) ).type () != TypeEndLine)
+	{
+		tokenlist.push_back (tok);
+		switch (tok.type () )
+		{
+		case TypeINCLUDE:
+		case TypeINCBIN:
+			tokenlist.push_back
+				(Token (TypeLiteral,
+					parseincludefile (iss) ) );
+			break;
+		case Type_ERROR:
+		case Type_WARNING:
+			tokenlist.push_back
+				(Token (TypeLiteral, parsemessage (iss) ) );
+			break;
+		default:
+			// Nothing special.
+			break;
+		}
+	}
+	current= tokenlist.begin ();
+}
+
+Tokenizer::~Tokenizer ()
+{
+}
+
+Tokenizer & Tokenizer::operator = (const Tokenizer & tz)
+{
+	tokenlist= tz.tokenlist;
+	current= tokenlist.begin ();
+	endpassed= 0;
+	nocase= tz.nocase;
+	return * this;
+}
+
+std::ostream & operator << (std::ostream & oss, const Tokenizer & tz)
+{
+	std::copy (tz.tokenlist.begin (), tz.tokenlist.end (),
+		std::ostream_iterator <Token> (oss, " ") );
+	return oss;
+}
+
+void Tokenizer::push_back (const Token & tok)
+{
+	tokenlist.push_back (tok);
+	current= tokenlist.begin ();
+}
+
+bool Tokenizer::empty () const
+{
+	return tokenlist.empty ();
+}
+
+bool Tokenizer::endswithparen () const
+{
+	ASSERT (! tokenlist.empty () );
+	return tokenlist.back ().type () == TypeClose;
+}
+
+
+size_t Tokenizer::pos () const
+{
+	return std::distance (tokenlist.begin (),
+		static_cast <const tokenlist_t::const_iterator> (current) );
+}
+
+void Tokenizer::reset ()
+{
+	current= tokenlist.begin ();
+	endpassed= 0;
+}
+
+Token Tokenizer::gettoken ()
+{
+	if (current == tokenlist.end () )
+	{
+		++endpassed;
+		return Token (TypeEndLine);
+	}
+	else
+	{
+		Token tok= * current;
+		++current;
+		return tok;
+	}
+}
+
+void Tokenizer::ungettoken ()
+{
+	if (endpassed > 0)
+	{
+		ASSERT (current == tokenlist.end () );
+		--endpassed;
+	}
+	else
+	{
+		if (current == tokenlist.begin () )
+			throw "Internal error: Tokenizer underflowed";
+		--current;
+	}
+}
+
+std::string Tokenizer::getincludefile ()
+{
+	Token tok= gettoken ();
+	if (tok.type () != TypeLiteral)
+		throw "Internal unexpected error";
+	return tok.str ();
+}
+
 
 // End of token.cpp

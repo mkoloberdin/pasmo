@@ -4,7 +4,14 @@
 bdos	equ 5
 conout	equ 2
 
-	org 100h
+start	org 100h
+
+	jp _hola
+
+_exit	db "Good morning.\r\n", 0
+
+_hola	ld hl, _exit
+	call showtext
 
 	jp hola
 
@@ -29,4 +36,4 @@ hola	ld hl, _exit
 
 _exit	db "Hello, autolocal world\r\n", 0
 
-	end
+	end start

@@ -48,7 +48,7 @@ pastm:
 
 	org 100h
 
-	typeout "Hello, \"macro\"world"
+	typeout "Hello, \"macro\" world"
 
 	typeout "\x30\7"
 

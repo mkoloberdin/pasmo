@@ -4,17 +4,23 @@ bdos	equ 5
 
 	org 100h
 
-sigue:	ld c, 6
-	ld e, 0FDh
+other:	
+	ld c, 6
+	; This works only in cp/m plus.
+	;ld e, 0FDh
+	;call bdos
+	ld e,0FFh
 	call bdos
+	cp 0
+	jp z, other
 
 	cp 20h
-	jp z, final
+	jp z, finish
 
 	call showreg
-	jp sigue
+	jp other
 
-final	ld c, 2
+finish	ld c, 2
 	ld e, 0Dh
 	call bdos
 	ld c, 2
@@ -68,5 +74,7 @@ isdigit:
 	ld c, 2
 	call bdos
 	ret
+
+this_is_the_end:	end
 
 ;	End

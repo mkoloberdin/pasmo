@@ -23,7 +23,11 @@ rsx	defw table
 table	defm 'BOU', 'M' + 80H
 	defm 'VIS', 'E' + 80H
 	defm 'CHO', 'C' + 80H, 0
-kernal	defs 4
+
+; Cambiado esto para que coincida con las DATA de la revista
+; y asi poder comprobar el checksum.
+;kernal	defs 4
+kernal	defb #FC, #A6, #09, #A0
 
 boum	cp 1
 	ret nz

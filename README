@@ -47,13 +47,28 @@
 		--prl      -->	Generar el fichero objeto en formato
 				PRL. Adecuado para RSX de CP/M Plus.
 
+		--cmd      -->	Generar el fichero objeto en formato
+				CMD de CP/M 86.
+
 		--plus3dos -->	Generar el fichero objeto con cabecera
 				PLUS3DOS (Spectrum disco).
 
 		--tap      -->	Generar un fichero .tap para emuladores
 				de Spectrum (imagen de cinta).
 
+		--tzx      -->	Generar un fichero .tzx para emuladores
+				de Spectrum (imagen de cinta).
+
+		--cdt      -->	Generar un fichero .cdt para emuladores
+				de Amstrad CPC (imagen de cinta).
+
 		--tapbas   -->	Igual que que la opción --tap pero
+				añadiendo un cargador Basic.
+
+		--tzxbas   -->	Igual que que la opción --tzx pero
+				añadiendo un cargador Basic.
+
+		--cdtbas   -->	Igual que que la opción --cdt pero
 				añadiendo un cargador Basic.
 
 		--amsdos   -->	Generar el fichero objeto con cabecera
@@ -81,8 +96,22 @@
 				en la sigiente etiqueta no local o en la
 				siguiente directiva PROC, LOCAL o MACRO.
 
+		-B
+		--bracket  -->	Modo sólo corchetes: los paréntesis quedan
+				reservados para expresiones.
+
 		-E
 		--equ	   -->	Predefine una etiqueta.
+
+		-8         
+		--w8080    -->	Mostrar warning cuando se usan instrucciones
+				del z80 que no exsiten en el 8080.
+
+		--86       -->	Generar código 8086.
+
+		-          -->	Fin de opciones, todo lo que siga se
+				consideran nombres de fichero aunque
+				comience por -.
 
 
 	Si ninguna opción indica lo contrario, el formato del código objeto
@@ -139,13 +168,28 @@ Comentarios y críticas a: julian.notfound@gmail.com
 		--prl      -->	Generate the object file in the PRL
 				format. Useful for CP/M Plus RSX.
 
+		--cmd      -->	Generate the object file in CP/M 86
+				CMD format.
+
 		--plus3dos -->	Generate the object file with PLUS3DOS
 				header (Spectrum disk).
 
 		--tap      -->	Generate a .tap file for Spectrum
 				emulators (tape image).
 
+		--tzx      -->	Generate a .tzx file for Spectrum
+				emulators (tape image).
+
+		--cdt      -->	Generate a .cdt file for Spectrum
+				emulators (tape image).
+
 		--tapbas   -->	Same as --tap option but adding a
+				Basic loader.
+
+		--tzxbas   -->	Same as --tzx option but adding a
+				Basic loader.
+
+		--cdtbas   -->	Same as --cdt option but adding a
 				Basic loader.
 
 		--amsdos   -->	Generate the object file with Amsdos
@@ -172,8 +216,18 @@ Comentarios y críticas a: julian.notfound@gmail.com
 				the next no local label or in the next PROC,
 				LOCAL or MACRO directive.
 
+		-B
+		--bracket  -->	Bracket only mode: parenthesis are reserved
+				for expressions.
+
 		-E
 		--equ	   -->	Predefine a label.
+
+		-8
+		-w8080     -->	Show warnings when using Z80 instructions
+				that does not exist in 8080.
+
+		--86       -->	Generate 8086 code.
 
 
 	If no options specify another, the object code format is binary

@@ -1,47 +1,30 @@
-;	showline.asm
+;	hilo.asm
+
+;	Test of HIGH and LOW operators.
 
 bdos	equ 5
 
-parambegin	equ 80h
-paramlen	equ 128
-
 	org 100h
 
-	call showendline
+l1	equ 01234h
+l2	equ 0FFFFh
+l3	equ 0F07Fh
 
-	ld hl, parambegin
-	ld b, paramlen
-
-nextchar:	ld a, (hl)
-
+	ld a, high l1
 	call showreg
-
-	inc hl
-
-	;djnz nextchar
-	dec b
-	jp nz, nextchar
-
 	call showendline
 
-	ld hl, parambegin
-	ld a, (hl)
+	ld a, low l1
+	call showreg
+	call showendline
 
-nextchar2:	inc hl
-	cp 0
-	jp z, nomorechar
+	ld a, high l1 or l3
+	call showreg
+	call showendline
 
-	ld e, (hl)
-	ld c, 2
-	push hl
-	push af
-	call bdos
-	pop af
-	pop hl
-	dec a
-	jp nextchar2
-
-nomorechar:	call showendline
+	ld a, high (low l1) and l3
+	call showreg
+	call showendline
 
 	call 0
 
@@ -49,6 +32,8 @@ showendline:	ld de, endline
 	ld c, 9
 	call bdos
 	ret
+
+endline	defb 0Dh, 0Ah, '$'
 
 showreg:
 	push bc
@@ -67,10 +52,9 @@ showreg:
 	; Para ver mejor al trazar.
 	and 0F0h
 
+	rept 4
 	rrca
-	rrca
-	rrca
-	rrca
+	endm
 
 	call shownibble
 
@@ -96,9 +80,5 @@ isdigit:
 	ld c, 2
 	call bdos
 	ret
-
-endline	defb 0Dh, 0Ah, '$'
-
-this_is_the_end:	end
 
 ;	End of showline.asm

@@ -1,90 +1,73 @@
+#ifndef INCLUDE_TOKEN_H
+#define INCLUDE_TOKEN_H
+
 // token.h
-// Revision 6-nov-2004
+// Revision 7-dec-2004
 
 #include <string>
-#include <sstream>
 #include <deque>
 
-#include <limits.h>
+#include "pasmotypes.h"
 
-#if USHRT_MAX == 65535
-
-typedef unsigned short address;
-
-#else
-
-// Using the C99 types, hoping they will be available.
-
-#include <stdint.h>
-
-typedef uint16_t address:
-
-#endif
-
-typedef unsigned char byte;
 
 enum TypeToken {
 	TypeUndef= 0,
-
 	TypeEndLine= 1,
+
+	// Single char operators.
 	TypeComma= ',',
 	TypeColon= ':',
 	TypePlus= '+',
 	TypeMinus= '-',
 	TypeMult= '*',
 	TypeDiv= '/',
-	TypeEqual= '=',
+	TypeEqOp= '=',
 	TypeOpen= '(',
 	TypeClose= ')',
+	TypeOpenBracket= '[',
+	TypeCloseBracket= ']',
 	TypeDollar= '$',
 	TypeMod= '%',
+	TypeLtOp= '<',
+	TypeGtOp= '>',
+	TypeBitNotOp= '~',
+	TypeBoolNotOp= '!',
+	TypeBitAnd= '&',
+	TypeBitOr= '|',
+	TypeQuestion= '?',
 
 	// Literals.
 	TypeIdentifier= 0x100,
 	TypeLiteral,
 	TypeNumber,
 
-	// Operators.
+	// Special tokens.
+	TypeEndOfInclude,
+
+	// Not single char operators.
 	TypeMOD,
+	TypeFirstName= TypeMOD,
 	TypeSHL,
+	TypeShlOp,
 	TypeSHR,
+	TypeShrOp,
 	TypeNOT,
-	// AND, OR y XOR son nemónicos.
+	// AND, OR and XOR are nemonics.
 	TypeEQ,
 	TypeLT,
 	TypeLE,
+	TypeLeOp,
 	TypeGT,
 	TypeGE,
+	TypeGeOp,
 	TypeNE,
+	TypeNeOp,
 	TypeNUL,
 	TypeDEFINED,
-
-	// Directives
-	TypeDEFB,
-	TypeDB,
-	TypeDEFM,
-	TypeDEFW,
-	TypeDW,
-	TypeDEFS,
-	TypeDS,
-	TypeEQU,
-	TypeDEFL,
-	TypeORG,
-	TypeINCLUDE,
-	TypeINCBIN,
-	TypeIF,
-	TypeELSE,
-	TypeENDIF,
-	TypePUBLIC,
-	TypeEND,
-	TypeLOCAL,
-	TypePROC,
-	TypeENDP,
-	TypeMACRO,
-	TypeENDM,
-	TypeEXITM,
-	TypeREPT,
-	TypeIRP,
+	TypeHIGH,
+	TypeLOW,
+	TypeBoolAnd,
+	TypeBoolOr,
 
 	// Nemonics
 	TypeADC,
@@ -150,12 +133,12 @@ enum TypeToken {
 	TypeSCF,
 	TypeSET,
 	TypeSLA,
-	TypeSRA,
 	TypeSLL,
+	TypeSRA,
 	TypeSRL,
 	TypeSUB,
 	TypeXOR,
-	
+
 	// Registers
 	// C is listed as flag.
 	TypeA,
@@ -188,19 +171,53 @@ enum TypeToken {
 	TypePE,
 	TypeP,
 	TypeM,
+
+	// Directives
+	TypeDEFB,
+	TypeDB,
+	TypeDEFM,
+	TypeDEFW,
+	TypeDW,
+	TypeDEFS,
+	TypeDS,
+	TypeEQU,
+	TypeDEFL,
+	TypeORG,
+	TypeINCLUDE,
+	TypeINCBIN,
+	TypeIF,
+	TypeELSE,
+	TypeENDIF,
+	TypePUBLIC,
+	TypeEND,
+	TypeLOCAL,
+	TypePROC,
+	TypeENDP,
+	TypeMACRO,
+	TypeENDM,
+	TypeEXITM,
+	TypeREPT,
+	TypeIRP,
+
+	// Directives with .
+	Type_ERROR,
+	Type_WARNING,
+
+	// Last used type number.
+	TypeLastName= Type_WARNING
 };
 
 class Token {
 public:
 	Token ();
-	Token (TypeToken t);
+	Token (TypeToken ttn);
 	Token (address n);
-	Token (TypeToken t, const std::string & s);
-	TypeToken type () const { return t; }
+	Token (TypeToken ttn, const std::string & sn);
+	TypeToken type () const;
 	std::string str () const;
-	address num () const { return number; }
+	address num () const;
 private:
-	TypeToken t;
+	TypeToken tt;
 	std::string s;
 	address number;
 };
@@ -209,33 +226,37 @@ std::ostream & operator << (std::ostream & oss, const Token & tok);
 
 class Tokenizer {
 public:
-	Tokenizer (bool nocase);
+	Tokenizer (bool nocase_n);
+	Tokenizer (TypeToken ttok);
 	Tokenizer (const Tokenizer & tz);
-	Tokenizer (const std::string & line, bool nocase);
+	Tokenizer (const std::string & line, bool nocase_n);
 	~Tokenizer ();
+	Tokenizer & operator = (const Tokenizer &);
+
 	bool getnocase () const { return nocase; }
 	void push_back (const Token & tok);
-	//void putback (const Token & tok);
+
+	bool empty () const;
+	size_t pos () const;
+	bool endswithparen () const;
+
+	void reset ();
 	Token gettoken ();
 	void ungettoken ();
 	std::string getincludefile ();
+
 	friend std::ostream & operator << (std::ostream & oss,
 		const Tokenizer & tz);
 private:
-	//std::istringstream iss;
-	void operator = (const Tokenizer &); // Forbidden.
-
 	typedef std::deque <Token> tokenlist_t;
 	tokenlist_t tokenlist;
 	tokenlist_t::iterator current;
 
-	//bool hassaved;
-	//Token saved;
 	size_t endpassed;
 	bool nocase;
-
-	Token parsetoken (std::istringstream & iss);
-	std::string parseincludefile (std::istringstream & iss);
 };
+
+
+#endif
 
 // End of token.h

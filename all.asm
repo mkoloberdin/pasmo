@@ -1,6 +1,8 @@
 ;	all.asm
 ;	All instructions of the Z80
 
+	org 100h	; Useful for some tests.
+
 des	equ 05h
 n	equ 20h
 nn	equ 0584h
@@ -8,8 +10,12 @@ nn	equ 0584h
 ;	ADC
 
 	adc a, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	adc a, (ix + des)
 	adc a, (iy + des)
+	endif
+
 	adc a, a
 	adc a, b
 	adc a, c
@@ -18,16 +24,23 @@ nn	equ 0584h
 	adc a, h
 	adc a, l
 	adc a, n
+
+	if ! defined ONLY8080
 	adc hl, bc
 	adc hl, de
 	adc hl, hl
 	adc hl, sp
+	endif
 
 ;	ADD
 
 	add a, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	add a, (ix + des)
 	add a, (iy + des)
+	endif
+
 	add a, a
 	add a, b
 	add a, c
@@ -36,24 +49,33 @@ nn	equ 0584h
 	add a, h
 	add a, l
 	add a, n
+
 	add hl, bc
 	add hl, de
 	add hl, hl
 	add hl, sp
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	add ix, bc
 	add ix, de
 	add ix, ix
 	add ix, sp
+
 	add iy, bc
 	add iy, de
 	add iy, iy
 	add iy, sp
+	endif
 
 ;	AND
 
 	and (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	and (ix + des)
 	and (iy + des)
+	endif
+
 	and a
 	and b
 	and c
@@ -65,6 +87,7 @@ nn	equ 0584h
 
 ;	BIT
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	bit 0, (hl)
 	bit 0, (ix + des)
 	bit 0, (iy + des)
@@ -152,6 +175,7 @@ nn	equ 0584h
 	bit 7, e
 	bit 7, h
 	bit 7, l
+	endif
 
 ;	CALL
 
@@ -172,8 +196,12 @@ nn	equ 0584h
 ;	CP
 
 	cp (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	cp (ix + des)
 	cp (iy + des)
+	endif
+
 	cp a
 	cp b
 	cp c
@@ -185,10 +213,13 @@ nn	equ 0584h
 
 ;	CP..
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	cpd
 	cpdr
 	cpir
 	cpi
+	endif
+
 	cpl
 
 ;	DAA
@@ -198,8 +229,12 @@ nn	equ 0584h
 ;	DEC
 
 	dec (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	dec (ix + des)
 	dec (iy + des)
+	endif
+
 	dec a
 	dec b
 	dec bc
@@ -209,8 +244,12 @@ nn	equ 0584h
 	dec e
 	dec h
 	dec hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	dec ix
 	dec iy
+	endif
+
 	dec l
 	dec sp
 
@@ -220,7 +259,9 @@ nn	equ 0584h
 
 ;	DJNZ
 
+	if ! defined ONLY8080
 l1	djnz l1
+	endif
 
 ;	EI
 
@@ -228,12 +269,21 @@ l1	djnz l1
 
 ;	EX
 
+	if ! defined ONLY86
 	ex (sp), hl
+	endif
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ex (sp), ix
 	ex (sp), iy
 	ex af, af'
+	endif
+
 	ex de, hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	exx
+	endif
 
 ;	HALT
 
@@ -241,12 +291,15 @@ l1	djnz l1
 
 ;	IM
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	im 0
 	im 1
 	im 2
+	endif
 
 ;	IN
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	in a, (c)
 	in b, (c)
 	in c, (c)
@@ -254,12 +307,17 @@ l1	djnz l1
 	in e, (c)
 	in h, (c)
 	in l, (c)
+	endif
 
 ;	INC
 
 	inc (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	inc (ix + des)
 	inc (iy + des)
+	endif
+
 	inc a
 	inc b
 	inc bc
@@ -269,8 +327,12 @@ l1	djnz l1
 	inc e
 	inc h
 	inc hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	inc ix
 	inc iy
+	endif
+
 	inc l
 	inc sp
 
@@ -278,17 +340,23 @@ l1	djnz l1
 
 	in a, (n)
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	ind
 	indr
 	ini
 	inir
+	endif
 
 ;	JP
 
 	jp nn
 	jp (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	jp (ix)
 	jp (iy)
+	endif
+
 	jp c, nn
 	jp m, nn
 	jp nc, nn
@@ -300,11 +368,13 @@ l1	djnz l1
 
 ;	JR
 
+	if ! defined ONLY8080
 	jr c, $ + 22h
 	jr nc, $ + 22h
 	jr nz, $ + 22h
 	jr z, $ + 22h
 	jr $ + 22h
+	endif
 
 ;	LD
 
@@ -319,6 +389,7 @@ l1	djnz l1
 	ld (hl), l
 	ld (hl), n
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld (ix + des), a
 	ld (ix + des), b
 	ld (ix + des), c
@@ -336,21 +407,35 @@ l1	djnz l1
 	ld (iy + des), h
 	ld (iy + des), l
 	ld (iy + des), n
+	endif
 
 	ld (nn), a
 
+	if ! defined ONLY8080
 	ld (nn), bc
 	ld (nn), de
+	endif
+
 	ld (nn), hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld (nn), ix
 	ld (nn), iy
+	endif
+
+	if ! defined ONLY8080
 	ld (nn), sp
+	endif
 
 	ld a, (bc)
 	ld a, (de)
 	ld a, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld a, (ix + des)
 	ld a, (iy + des)
+	endif
+
 	ld a, (nn)
 	ld a, a
 	ld a, b
@@ -358,14 +443,25 @@ l1	djnz l1
 	ld a, d
 	ld a, e
 	ld a, h
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld a, i
+	endif
+
 	ld a, l
 	ld a, n
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld a, r
+	endif
 
 	ld b, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld b, (ix + des)
 	ld b, (iy + des)
+	endif
+
 	ld b, a
 	ld b, b
 	ld b, c
@@ -375,12 +471,19 @@ l1	djnz l1
 	ld b, l
 	ld b, n
 
+	if ! defined ONLY8080
 	ld bc, (nn)
+	endif
+
 	ld bc, nn
 
 	ld c, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld c, (ix + des)
 	ld c, (iy + des)
+	endif
+
 	ld c, a
 	ld c, b
 	ld c, c
@@ -391,8 +494,12 @@ l1	djnz l1
 	ld c, n
 
 	ld d, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld d, (ix + des)
 	ld d, (iy + des)
+	endif
+
 	ld d, a
 	ld d, b
 	ld d, c
@@ -402,12 +509,19 @@ l1	djnz l1
 	ld d, l
 	ld d, n
 
+	if ! defined ONLY8080
 	ld de, (nn)
+	endif
+
 	ld de, nn
 
 	ld e, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld e, (ix + des)
 	ld e, (iy + des)
+	endif
+
 	ld e, a
 	ld e, b
 	ld e, c
@@ -418,8 +532,12 @@ l1	djnz l1
 	ld e, n
 
 	ld h, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld h, (ix + des)
 	ld h, (iy + des)
+	endif
+
 	ld h, a
 	ld h, b
 	ld h, c
@@ -432,16 +550,24 @@ l1	djnz l1
 	ld hl, (nn)
 	ld hl, nn
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld i, a
+	endif
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld ix, (nn)
 	ld ix, nn
 	ld iy, (nn)
 	ld iy, nn
+	endif
 
 	ld l, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld l, (ix + des)
 	ld l, (iy + des)
+	endif
+
 	ld l, a
 	ld l, b
 	ld l, c
@@ -451,22 +577,35 @@ l1	djnz l1
 	ld l, l
 	ld l, n
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld r, a
+	endif
 
+	if ! defined ONLY8080
 	ld sp, (nn)
+	endif
+
 	ld sp, hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	ld sp, ix
 	ld sp, iy
+	endif
+
 	ld sp, nn
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	ldd
 	lddr
 	ldi
 	ldir
+	endif
 
 ;	NEG
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	neg
+	endif
 
 ;	NOP
 
@@ -475,8 +614,12 @@ l1	djnz l1
 ;	OR
 
 	or (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	or (ix + des)
 	or (iy + des)
+	endif
+
 	or a
 	or b
 	or c
@@ -488,11 +631,14 @@ l1	djnz l1
 
 ;	OT...
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	otdr
 	otir
+	endif
 
 ;	OUT
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	out (c), a
 	out (c), b
 	out (c), c
@@ -501,11 +647,14 @@ l1	djnz l1
 	out (c), h
 	out (c), l
 	out (n), a
+	endif
 
 ;	OUTD/I
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	outd
 	outi
+	endif
 
 ;	POP
 
@@ -513,8 +662,11 @@ l1	djnz l1
 	pop bc
 	pop de
 	pop hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	pop ix
 	pop iy
+	endif
 
 ;	PUSH
 
@@ -522,11 +674,15 @@ l1	djnz l1
 	push bc
 	push de
 	push hl
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	push ix
 	push iy
+	endif
 
 ;	RES
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	res 0, (hl)
 	res 0, (ix + des)
 	res 0, (iy + des)
@@ -614,6 +770,7 @@ l1	djnz l1
 	res 7, e
 	res 7, h
 	res 7, l
+	endif
 
 ;	RET
 
@@ -626,11 +783,15 @@ l1	djnz l1
 	ret pe
 	ret po
 	ret z
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	reti
 	retn
+	endif
 
 ;	RL
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	rl (hl)
 	rl (ix + des)
 	rl (iy + des)
@@ -641,6 +802,7 @@ l1	djnz l1
 	rl e
 	rl h
 	rl l
+	endif
 
 ;	RLA
 
@@ -648,6 +810,7 @@ l1	djnz l1
 
 ;	RLC
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	rlc (hl)
 	rlc (ix + des)
 	rlc (iy + des)
@@ -658,6 +821,7 @@ l1	djnz l1
 	rlc e
 	rlc h
 	rlc l
+	endif
 
 ;	RLCA
 
@@ -665,10 +829,13 @@ l1	djnz l1
 
 ;	RLD
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	rld
+	endif
 
 ;	RR
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	rr (hl)
 	rr (ix + des)
 	rr (iy + des)
@@ -679,6 +846,7 @@ l1	djnz l1
 	rr e
 	rr h
 	rr l
+	endif
 
 ;	RRA
 
@@ -686,6 +854,7 @@ l1	djnz l1
 
 ;	RRC
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	rrc (hl)
 	rrc (ix + des)
 	rrc (iy + des)
@@ -696,6 +865,7 @@ l1	djnz l1
 	rrc e
 	rrc h
 	rrc l
+	endif
 
 ;	RRCA
 
@@ -703,10 +873,13 @@ l1	djnz l1
 
 ;	RRD
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	rrd
+	endif
 
 ;	RST
 
+	if ! defined MODE86 && ! defined ONLY86
 	rst 0
 	rst 8
 	rst 10h
@@ -715,13 +888,18 @@ l1	djnz l1
 	rst 28h
 	rst 30h
 	rst 38h
+	endif
 
 ;	SBC
 
 	sbc a, n
 	sbc a, (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	sbc a, (ix + des)
 	sbc a, (iy + des)
+	endif
+
 	sbc a, a
 	sbc a, b
 	sbc a, c
@@ -730,10 +908,12 @@ l1	djnz l1
 	sbc a, h
 	sbc a, l
 
+	if ! defined ONLY8080
 	sbc hl, bc
 	sbc hl, de
 	sbc hl, hl
 	sbc hl, sp
+	endif
 
 ;	SCF
 
@@ -741,6 +921,7 @@ l1	djnz l1
 
 ;	SET
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	set 0, (hl)
 	set 0, (ix + des)
 	set 0, (iy + des)
@@ -828,9 +1009,11 @@ l1	djnz l1
 	set 7, e
 	set 7, h
 	set 7, l
+	endif
 
 ;	SLA
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	sla (hl)
 	sla (ix + des)
 	sla (iy + des)
@@ -841,9 +1024,11 @@ l1	djnz l1
 	sla e
 	sla h
 	sla l
+	endif
 
 ;	SRA
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	sra (hl)
 	sra (ix + des)
 	sra (iy + des)
@@ -854,9 +1039,11 @@ l1	djnz l1
 	sra e
 	sra h
 	sra l
+	endif
 
 ;	SRL
 
+	if ! defined ONLY8080 && ! defined ONLY86
 	srl (hl)
 	srl (ix + des)
 	srl (iy + des)
@@ -867,12 +1054,17 @@ l1	djnz l1
 	srl e
 	srl h
 	srl l
+	endif
 
 ;	SUB
 
 	sub (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	sub (ix + des)
 	sub (iy + des)
+	endif
+
 	sub a
 	sub b
 	sub c
@@ -885,8 +1077,12 @@ l1	djnz l1
 ;	XOR
 
 	xor (hl)
+
+	if ! defined ONLY8080 && ! defined ONLY86
 	xor (ix + des)
 	xor (iy + des)
+	endif
+
 	xor a
 	xor b
 	xor c
@@ -895,5 +1091,7 @@ l1	djnz l1
 	xor h
 	xor l
 	xor n
+
+this_is_the_end:	end
 
 ;	End of all.asm
