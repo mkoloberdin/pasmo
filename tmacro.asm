@@ -36,13 +36,62 @@ popall	macro
 
 	endm
 
-	pushall
+;	Another way.
+
+pall	macro operation
+
+	irp reg, af, bc, de, hl
+	local i1
+	operation reg
+	endm
+
+	endm
+
+pushall2	macro
+
+	pall push
+
+	endm
+
+popall2	macro
+
+
+	irp reg, af, bc, de, hl
+	pop reg
+	endm
+
+	endm
+
+;	Yet another way
+
+pushmany	macro reg
+
+	rept -1
+	if nul reg
+	exitm
+	endif
+	push reg
+	.shift
+	endm
+
+	endm
+
+pushall3	macro
+	pushmany af, bc, de, hl
+	endm
+
+;	Main program
+
+;	pushall
+;	pushall2
+	pushall3
 
 	ld de, hello
 i1	bdos 9
 i2:	lineend
 
-	popall
+	;popall
+	popall2
 
 	bdos 0
 

@@ -45,7 +45,7 @@ init:	rept 8
 	fill1k
 	endm
 
-	if 0	; This is for pasmo testing.
+	if 1	; This is for pasmo testing.
 
 	if defined SOMEMORE && SOMEMORE != 0
 	filln SOMEMORE

@@ -1,5 +1,5 @@
 // token.cpp
-// Revision 8-dec-2004
+// Revision 21-dec-2004
 
 #include "token.h"
 
@@ -10,6 +10,7 @@
 #include <iterator>
 #include <algorithm>
 #include <map>
+#include <stdexcept>
 
 #include <ctype.h>
 
@@ -22,6 +23,8 @@ using std::endl;
 using std::istringstream;
 using std::ostringstream;
 using std::for_each;
+using std::runtime_error;
+using std::logic_error;
 
 
 //*********************************************************
@@ -84,6 +87,7 @@ const NameType nt []= {
 	NT (LOW),
 	NameType ("&&", TypeBoolAnd),
 	NameType ("||", TypeBoolOr),
+	NameType ("##", TypeSharpSharp),
 
 	// Nemonics
 	NT (ADC),
@@ -217,7 +221,8 @@ const NameType nt []= {
 
 	// Directives with .
 	NT_ (ERROR),
-	NT_ (WARNING)
+	NT_ (WARNING),
+	NT_ (SHIFT)
 };
 
 class mapiniter {
@@ -276,6 +281,9 @@ TypeToken getliteraltoken (const std::string & str)
 		return TypeUndef;
 }
 
+} // namespace
+
+
 std::string gettokenname (TypeToken tt)
 {
 	invmap_t::iterator it= invmap.find (tt);
@@ -285,8 +293,6 @@ std::string gettokenname (TypeToken tt)
 		return std::string (1, static_cast <char> (tt) );
 }
 
-
-} // namespace
 
 
 //*********************************************************
@@ -389,7 +395,39 @@ std::ostream & operator << (std::ostream & oss, const Token & tok)
 
 namespace {
 
-const char unclosed []= "Unclosed literal";
+
+logic_error tokenizerunderflow ("Tokenizer underflowed");
+logic_error missingfilename ("Missing filename");
+
+
+runtime_error unclosed ("Unclosed literal");
+runtime_error invalidhex ("Invalid hexadecimal number");
+runtime_error invalidnumber ("Inavlid numeric format");
+runtime_error outofrange ("Number out of range");
+runtime_error needfilename ("Filename required");
+runtime_error invalidfilename ("Invalid file name");
+
+
+class UnexpectedChar : public runtime_error {
+public:
+	UnexpectedChar (char c) :
+		runtime_error ("Unexpected character: " + chartostr (c) )
+	{ }
+private:
+	static std::string chartostr (char c)
+	{
+		std::string r;
+		if (c < 32 || c >= 127)
+			r= '&' + hex2str (c);
+		else
+		{
+			r= '\'';
+			r+= c;
+			r+= '\'';
+		}
+		return r;
+	}
+};
 
 Token parseless (std::istream & iss)
 {
@@ -571,7 +609,7 @@ Token parsedollar (std::istream & iss)
 			c= iss.get ();
 		} while (iss && (isxdigit (c) || c == '$') );
 		if (str.empty () )
-			throw "Invalid empty hex number";
+			throw invalidhex;
 		if (iss)
 			iss.unget ();
 
@@ -579,9 +617,9 @@ Token parsedollar (std::istream & iss)
 		char * aux;
 		n= strtoul (str.c_str (), & aux, 16);
 		if (* aux != '\0')
-			throw "Invalid numeric format";
+			throw invalidnumber;
 		if (n > 0xFFFFUL)
-			throw "Number out of range";
+			throw outofrange;
 		return Token (static_cast <address> (n) );
 	}
 	else
@@ -596,6 +634,8 @@ Token parsesharp (std::istream & iss)
 {
 	std::string str;
 	char c= iss.get ();
+	if (c == '#')
+		return Token (TypeSharpSharp);
 	while (iss && (isxdigit (c) || c == '$') )
 	{
 		if (c != '$')
@@ -603,7 +643,8 @@ Token parsesharp (std::istream & iss)
 		c= iss.get ();
 	}
 	if (str.empty () )
-		throw "Invalid empty hex number";
+		return Token (TypeSharp);
+
 	if (iss)
 		iss.unget ();
 
@@ -611,9 +652,9 @@ Token parsesharp (std::istream & iss)
 	char * aux;
 	n= strtoul (str.c_str (), & aux, 16);
 	if (* aux != '\0')
-		throw "Invalid numeric format";
+		throw invalidnumber;
 	if (n > 0xFFFFUL)
-		throw "Number out of range";
+		throw outofrange;
 	return Token (static_cast <address> (n) );
 }
 
@@ -655,16 +696,16 @@ Token parseampersand (std::istream & iss)
 		c= iss.get ();
 	}
 	if (str.empty () )
-		throw "Syntax error";
+		throw invalidnumber;
 	if (iss)
 		iss.unget ();
 
 	char * aux;
 	unsigned long n= strtoul (str.c_str (), & aux, base);
 	if (* aux != '\0')
-		throw "Invalid numeric format";
+		throw invalidnumber;
 	if (n > 0xFFFFUL)
-		throw "Number out of range";
+		throw outofrange;
 	return Token (static_cast <address> (n) );
 }
 
@@ -707,9 +748,9 @@ Token parsepercent (std::istream & iss)
 	char * aux;
 	n= strtoul (str.c_str (), & aux, 2);
 	if (* aux != '\0')
-		throw "Invalid numeric format";
+		throw invalidnumber;
 	if (n > 0xFFFFUL)
-		throw "Number out of range";
+		throw outofrange;
 	return Token (static_cast <address> (n) );
 }
 
@@ -736,7 +777,7 @@ Token parsedigit (std::istream & iss, char c)
 	{
 		str.erase (0, 2);
 		if (str.empty () )
-			throw "Invalid hex number";
+			throw invalidhex;
 		n= strtoul (str.c_str (), & aux, 16);
 	}
 	else
@@ -767,12 +808,12 @@ Token parsedigit (std::istream & iss, char c)
 		}
 	}
 	if (* aux != '\0')
-		throw "Invalid numeric format";
+		throw invalidnumber;
 
 	// Testing: do not forbid numbers out of 16 bits range,
 	// just truncate it.
 	//if (n > 0xFFFFUL)
-	//	throw "Number out of range";
+	//	throw outofrange;
 
 	return Token (static_cast <address> (n) );
 }
@@ -921,13 +962,7 @@ Token parsetoken (std::istream & iss, bool nocase)
 
 	// Any other case, invalid character.
 
-	ostringstream oss;
-	oss << "Unexpected character: ";
-	if (c < 32 || c >= 127)
-		oss << '&' << hex2 (c);
-	else
-		oss << '\'' << c << '\'';
-	throw oss.str ();
+	throw UnexpectedChar (c);
 }
 
 std::string parseincludefile (std::istream & iss)
@@ -935,7 +970,7 @@ std::string parseincludefile (std::istream & iss)
 	char c;
 	iss >> c;
 	if (! iss)
-		throw "Filename required";
+		throw needfilename;
 	std::string r;
 	switch (c)
 	{
@@ -944,7 +979,7 @@ std::string parseincludefile (std::istream & iss)
 		{
 			c= iss.get ();
 			if (! iss)
-				throw "Invalid file name";
+				throw invalidfilename;
 			if (c != '"')
 				r+= c;
 		} while (c != '"');
@@ -954,7 +989,7 @@ std::string parseincludefile (std::istream & iss)
 		{
 			c= iss.get ();
 			if (! iss)
-				throw "Invalid file name";
+				throw invalidfilename;
 			if (c != '\'')
 				r+= c;
 		} while (c != '\'');
@@ -993,6 +1028,13 @@ std::string parsemessage (std::istream & iss)
 //			class Tokenizer
 //*********************************************************
 
+
+Tokenizer::Tokenizer () :
+	current (tokenlist.begin () ),
+	endpassed (0),
+	nocase (false)
+{
+}
 
 Tokenizer::Tokenizer (bool nocase_n) :
 	current (tokenlist.begin () ),
@@ -1131,7 +1173,7 @@ void Tokenizer::ungettoken ()
 	else
 	{
 		if (current == tokenlist.begin () )
-			throw "Internal error: Tokenizer underflowed";
+			throw tokenizerunderflow;
 		--current;
 	}
 }
@@ -1140,7 +1182,7 @@ std::string Tokenizer::getincludefile ()
 {
 	Token tok= gettoken ();
 	if (tok.type () != TypeLiteral)
-		throw "Internal unexpected error";
+		throw missingfilename;
 	return tok.str ();
 }
 

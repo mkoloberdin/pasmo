@@ -2,7 +2,7 @@
 #define INCLUDE_TOKEN_H
 
 // token.h
-// Revision 7-dec-2004
+// Revision 20-dec-2004
 
 #include <string>
 #include <deque>
@@ -35,6 +35,7 @@ enum TypeToken {
 	TypeBitAnd= '&',
 	TypeBitOr= '|',
 	TypeQuestion= '?',
+	TypeSharp= '#',
 
 	// Literals.
 	TypeIdentifier= 0x100,
@@ -68,6 +69,7 @@ enum TypeToken {
 	TypeLOW,
 	TypeBoolAnd,
 	TypeBoolOr,
+	TypeSharpSharp,
 
 	// Nemonics
 	TypeADC,
@@ -202,10 +204,14 @@ enum TypeToken {
 	// Directives with .
 	Type_ERROR,
 	Type_WARNING,
+	Type_SHIFT,
 
 	// Last used type number.
-	TypeLastName= Type_WARNING
+	TypeLastName= Type_SHIFT
 };
+
+std::string gettokenname (TypeToken tt);
+
 
 class Token {
 public:
@@ -224,8 +230,10 @@ private:
 
 std::ostream & operator << (std::ostream & oss, const Token & tok);
 
+
 class Tokenizer {
 public:
+	Tokenizer ();
 	Tokenizer (bool nocase_n);
 	Tokenizer (TypeToken ttok);
 	Tokenizer (const Tokenizer & tz);

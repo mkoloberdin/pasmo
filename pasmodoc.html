@@ -11,7 +11,7 @@
 
 <body>
 
-<h1>Pasmo documentation (unfinished).</h1>
+<h1>Pasmo documentation.</h1>
 
 <p>
 (C) 2004 Juli&aacute;n Albo.
@@ -22,26 +22,34 @@ Use and distribution allowed under the terms of the GPL license.
 </p>
 
 <p>
-Last revision date: 5-dec-2004
+Last revision date: 21-dec-2004
 </p>
 
 <p>
-Current Pasmo version: 0.5.0
+Current Pasmo version: 0.5.1
 </p>
 
 <h2>Index.</h2>
 
 <ul>
 
-<li><a href="#intro">Introduction.</a></li>
+<li>
+<a href="#intro">Introduction.</a>
+</li>
 
-<li><a href="#install">Installation.</a></li>
+<li>
+<a href="#install">Installation.</a>
+</li>
 
-<li><a href="#command">Command line use.</a></li>
+<li>
+<a href="#command">Command line use.</a>
+</li>
 
-<li><a href="#codegen">Code generation information.</a>
+<li>
+<a href="#codegen">Code generation modes.</a>
 	<ul>
 	<li><a href="#codegendefault">Default mode.</a></li>
+	<li><a href="#codegenbin">--bin mode.</a></li>
 	<li><a href="#codegenhex">--hex mode.</a></li>
 	<li><a href="#codegenprl">--prl mode.</a></li>
 	<li><a href="#codegencmd">--cmd mode.</a></li>
@@ -51,17 +59,21 @@ Current Pasmo version: 0.5.0
 	<li><a href="#codegentapbas">--tapbas mode.</a></li>
 	<li><a href="#codegentzxbas">--tzxbas mode.</a></li>
 	<li><a href="#codegencdtbas">--cdtbas mode.</a></li>
+	<li><a href="#codegenplus3dos">--plus3dos mode.</a></li>
+	<li><a href="#codegenamsdos">--amsdos mode.</a></li>
+	<li><a href="#codegenmsx">--msx mode.</a></li>
 	<li><a href="#codegensymbol">Symbol table.</a></li>
 	</ul>
 </li>
 
-<li><a href="#source">Source code format.</a>
+<li>
+<a href="#source">Source code format.</a>
 	<ul>
 	<li><a href="#sourcegeneral">Generalities.</a>
 	<li><a href="#sourcelit">Literals.</a>
 		<ul>
-		<li><a href="#sourcelitnum">Numeric literals.</a>
-		<li><a href="#sourcelitstr">String literals.</a>
+		<li><a href="#sourcelitnum">Numeric literals.</a></li>
+		<li><a href="#sourcelitstr">String literals.</a></li>
 		</ul>
 	</li>
 	<li><a href="#sourceident">Identifiers.</a>
@@ -70,19 +82,79 @@ Current Pasmo version: 0.5.0
 	</ul>
 </li>
 
-<li><a href="#directives">Directives.</a></li>
+<li>
+<a href="#directives">Directives.</a>
+	<ul>
+	<li><a href="#direrror">.ERROR</a></li>
+	<li><a href="#dirshift">.SHIFT</a></li>
+	<li><a href="#dirwarning">.WARNING</a></li>
+	<li><a href="#dirdefb">DEFB</a></li>
+	<li><a href="#dirdefl">DEFL</a></li>
+	<li><a href="#dirdefm">DEFM</a></li>
+	<li><a href="#dirdefs">DEFS</a></li>
+	<li><a href="#dirdefw">DEFW</a></li>
+	<li><a href="#dirds">DS</a></li>
+	<li><a href="#dirdw">DW</a></li>
+	<li><a href="#direlse">ELSE</a></li>
+	<li><a href="#dirend">END</a></li>
+	<li><a href="#direndif">ENDIF</a></li>
+	<li><a href="#direndm">ENDM</a></li>
+	<li><a href="#direndp">ENDP</a></li>
+	<li><a href="#direqu">EQU</a></li>
+	<li><a href="#direxitm">EXITM</a></li>
+	<li><a href="#dirif">IF</a></li>
+	<li><a href="#dirinclude">INCLUDE</a></li>
+	<li><a href="#dirincbin">INCBIN</a></li>
+	<li><a href="#dirirp">IRP</a></li>
+	<li><a href="#dirlocal">LOCAL</a></li>
+	<li><a href="#dirmacro">MACRO</a></li>
+	<li><a href="#dirorg">ORG</a></li>
+	<li><a href="#dirproc">PROC</a></li>
+	<li><a href="#dirpublic">PUBLIC</a></li>
+	<li><a href="#dirrept">REPT</a></li>
+	</ul>
+</li>
 
-<li><a href="#operators">Operators.</a></li>
+<li>
+<a href="#operators">Operators.</a>
+	<ul>
+	<li><a href="#opergeneral">Generalities.</a></li>
+	<li><a href="#opertable">Table of precedence.</a></li>
+	<li><a href="#operlist">List of operators.</a></li>
+	</ul>
+</li>
 
-<li><a href="#macros">Macros.</a></li>
+<li>
+<a href="#macros">Macros.</a>
+	<ul>
+	<li><a href="#macrogeneral">Generalities.</a></li>
+	<li><a href="#macrodirectives">Directives.</a></li>
+		<ul>
+		<li><a href="#macroshift">.SHIFT</a></li>
+		<li><a href="#macroendm">ENDM</a></li>
+		<li><a href="#macroexitm">EXITM</a></li>
+		<li><a href="#macroirp">IRP</a></li>
+		<li><a href="#macromacro">MACRO</a></li>
+		<li><a href="#macrorept">REPT</a></li>
+		</ul>
+	</ul>
+</li>
 
-<li><a href="#discussion">About suggestions and possible improvements.</a></li>
+<li>
+<a href="#discussion">About suggestions and possible improvements.</a>
+</li>
 
-<li><a href="#tricks">Tricks.</a></li>
+<li>
+<a href="#tricks">Tricks.</a>
+</li>
 
-<li><a href="#bugs">Bugs.</a></li>
+<li>
+<a href="#bugs">Bugs.</a>
+</li>
 
-<li><a href="#epilogue">Epilogue.</a></li>
+<li>
+<a href="#epilogue">Epilogue.</a>
+</li>
 
 </ul>
 
@@ -108,8 +180,9 @@ names conflicting in some programs.
 <p>
 Pasmo can also generate the 8086 equivalent to the z80 assembly code.
 It can create COM files for ms-dos, by using the binary generation mode,
-or CMD files for CP/M 86, by using the --cmd option. This feature is
-experimental, use with care.
+or CMD files for CP/M 86, by using
+<a href="#codegencmd">the --cmd generation mode</a>.
+This feature is experimental, use with care.
 </p>
 
 <h2><a name="install">Installation</a>.</h2>
@@ -139,14 +212,20 @@ Pasmo is invoked from command line as:
 </p>
 
 <pre>
-	pasmo [options] file.asm file.bin [file.symbol]
+	pasmo [options] file.asm file.bin [file.symbol [file.publics] ]
 </pre>
 
 <p>
 Where file.asm is the source file, file.bin is the object file to be created
 and optionally file.symbol is the file where the symbol table will be
-written, use - to write it in the standard output. Options can be zero or
-more of the following:
+written and file.publics is the file for the public symbols table.
+Both symbol file names can be an empty string for no generation or - to write
+in the standard output. When the --public option is used this is handled
+in another way, see below.
+</p>
+
+<p>
+Options can be zero or more of the following:
 </p>
 
 <dl>
@@ -186,6 +265,11 @@ Add directory to the list for searching files in INCLUDE and INCBIN.
 Generate 8086 code instead of Z80. This feature is experimental.
 </dd>
 
+<dt>--bin</dt>
+<dd>
+Generate the object file in raw binary format without headers.
+</dd>
+
 <dt>--hex</dt>
 <dd>
 Generate the object file in Intel HEX format.
@@ -193,33 +277,27 @@ Generate the object file in Intel HEX format.
 
 <dt>--prl</dt>
 <dd>
-Generate the object file in PRL format, useful for CP/M Plus RSX.
+Generate the object file in CP/M PRL format.
 </dd>
 
 <dt>--cmd</dt>
 <dd>
-Generate the object file in CP/M 86 CMD format. Useful in union with
-the --86 option.
-</dd>
-
-<dt>--plus3dos</dt>
-<dd>
-Generate the object file with PLUS3DOS header (Spectrum disk).
+Generate the object file in CP/M 86 CMD format.
 </dd>
 
 <dt>--tap</dt>
 <dd>
-Generate a .tap file for Spectrum emulators (tape image).
+Generate the object file in .tap format.
 </dd>
 
 <dt>--tzx</dt>
 <dd>
-Generate a .tzx file for Spectrum emulators (tape image).
+Generate the object file in .tzx format.
 </dd>
 
 <dt>--cdt</dt>
 <dd>
-Generate a .cdt file for Amstrad CPC emulators (tape image).
+Generate the object file in .cdt format.
 </dd>
 
 <dt>--tapbas</dt>
@@ -237,19 +315,25 @@ Same as --txz but adding a Basic loader before the code.
 Same as --cdt but adding a Basic loader before the code.
 </dd>
 
+<dt>--plus3dos</dt>
+<dd>
+Generate the object file in PLUS3DOS format.
+</dd>
+
 <dt>--amsdos</dt>
 <dd>
-Generate the object file with Amsdos header (Amstrad CPC disk).
+Generate the object file in Amsdos format.
 </dd>
 
 <dt>--msx</dt>
 <dd>
-Generate the object file with header for use with BLOAD in MSX Basic.
+Generate the object file in MSX format.
 </dd>
 
 <dt>--public</dt>
 <dd>
-The symbol table listing will include only symbols declared as PUBLIC.
+Only the public symbols table is generated, using the file.symbol name,
+file.symbol must not be specified when using this option.
 </dd>
 
 <dt>--name</dt>
@@ -272,7 +356,8 @@ Make identifiers case insensitive.
 <dt>--alocal</dt>
 <dd>
 Use autolocal mode. In this mode all labels that begins with '_'
-are locals. See the chapter about labels for details.
+are locals. See <a href="#sourcelabel">the chapter about labels</a> for
+details.
 </dd>
 
 <dt>--bracket</dt>
@@ -301,8 +386,8 @@ assembler syntax.
 </dl>
 
 <p>
-When no option for code generation is specified, the format used is
-binary without headers.
+When no option for code generation is specified, --bin is used by
+default.
 </p>
 
 <p>
@@ -312,12 +397,19 @@ standard output. Error messages goes to error ouptut unless the --err
 option is used.
 </p>
 
-<h2><a name="codegen">Code generation information</a>.</h2>
+<h2><a name="codegen">Code generation modes</a>.</h2>
 
 <h3><a name="codegendefault">Default mode</a></h3>
 
 <p>
-The default mode just dumps the code generated from the first
+If none of the code generation options is specified, then --bin mode is
+used by default.
+</p>
+
+<h3><a name="codegenbin">--bin mode</a></h3>
+
+<p>
+The --bin mode just dumps the code generated from the first
 position used without any header. This mode can be used for
 direct generation of CP/M or MSX COM files, supposed that you
 use a ORG 100H directive at the beginning of the code, or to
@@ -355,13 +447,15 @@ generate CP/M 86 executables from CP/M 80 sources with minimal changes.
 <p>
 The --tap options generates a tap file with a code block, with the
 loading position set to the beginnig of the code so you can load it
-with a LOAD "" CODE instruction.
+from Basic with a
+<strong>LOAD&nbsp;&quot;&quot;&nbsp;CODE</strong>
+instruction.
 </p>
 
 <h3><a name="codegentzx">--tzx mode</a></h3>
 
 <p>
-Same as --tap but using tzx format instead of tap.
+Same as <a href="#codegentap">--tap</a> but using tzx format instead of tap.
 </p>
 
 <h3><a name="codegencdt">--cdt mode</a></h3>
@@ -370,7 +464,11 @@ Same as --tap but using tzx format instead of tap.
 The --cdt options generates a cdt file with a code block, with the
 loading position set to the beginning of the code and the start
 address to the start point specified in the source, if any, so you
-can use RUN "" to execute it or LOAD "" to load it.
+can use
+<strong>RUN&nbsp;&quot;&quot;</strong>
+to execute it or
+<strong>LOAD&nbsp;&quot;&quot;</strong>
+to load it.
 </p>
 
 <h3><a name="codegentapbas">--tapbas mode</a></h3>
@@ -379,7 +477,8 @@ can use RUN "" to execute it or LOAD "" to load it.
 With the --tapbas option a tap file is generated with two parts:
 a Basic loader and a code block with the object code. The Basic
 loader does a CLEAR before the initial address of the code, loads
-the code, and executes it if a entry point is defined (see the END
+the code, and executes it if a entry point is defined (see the
+<a href="#dirend">END</a>
 directive). That way you can directly launch the code in a emulator,
 or transfer it to a tape for use in a real Spectrum.
 </p>
@@ -387,14 +486,43 @@ or transfer it to a tape for use in a real Spectrum.
 <h3><a name="codegentzxbas">--tzxbas mode</a></h3>
 
 <p>
-Same as --tapbas but using tzx format instead of tap.
+Same as <a href="#codegentapbas">--tapbas</a> but using tzx format instead
+of tap.
 </p>
 
 <h3><a name="codegencdtbas">--cdtbas mode</a></h3>
 
 <p>
-Same as --tapbas but using cdt format instead of tap and with a
-Locomotive Basic loader instead of Spectrum Basic.
+Same as <a href="#codegentapbas">--tapbas</a> but using cdt format instead
+of tap and with a Locomotive Basic loader instead of Spectrum Basic.
+</p>
+
+<h3><a name="codegenplus3dos">--plus3dos mode</a></h3>
+
+<p>
+Generate the object file in plus3dos format, used by the Spectrum +3 disks.
+The file can be loaded from Basic with a
+<strong>LOAD&nbsp;&quot;filename&quot;&nbsp;CODE</strong>
+instruction.
+</p>
+
+<h3><a name="codegenamsdos">--amsdos mode</a></h3>
+
+<p>
+Generate the object file with Amsdos header, used by the Amstrad CPC
+on disk files. The file generated can be loaded from Basic with
+<strong>LOAD&nbsp;&quot;filename&quot;,&nbsp;address</strong>
+or executed with
+<strong>RUN&nbsp;&quot;filename&quot;</strong>
+if an entry point has been specified in the source (see the
+<a href="#dirend">END</a>
+directive).
+</p>
+
+<h3><a name="codegenmsx">--msx mode</a></h3>
+
+<p>
+Generate the object file with header for use with BLOAD in MSX Basic.
 </p>
 
 <h3><a name="codegensymbol">Symbol table</a></h3>
@@ -427,7 +555,7 @@ form feed characters is also undefined.
 <p>
 Everything after a ; in a line is a comment (unlees the ; is part of a
 string literal, of course). There are no multiline comments, you can
-use IF 0 .... ENDIF instead (but see INCLUDE).
+use IF 0 .... ENDIF instead (but see <a href="#dirinclude">INCLUDE</a>).
 </p>
 
 <p>
@@ -471,7 +599,8 @@ literal is only the $ symbol, in that case is an operator, see below.
 </p>
 
 <p>
-A literal that begins with # is a hexadecimal constant.
+A literal that begins with # is a hexadecimal constant, except if there
+are two consecitives #, see the ## operator.
 </p>
 
 <p>
@@ -563,7 +692,9 @@ is not recognized as such.
 
 <p>
 Identifiers that begins with '_' are special when using autolocal mode,
-see the --alocal option and the chapter about labels.
+see the --alocal option and
+<a href="#sourcelabel">the chapter about labels</a>
+for details.
 </p>
 
 <p>
@@ -627,7 +758,9 @@ that contains a label not yet defined, for example).
 
 <p>
 In the default mode a label is global unless declared as LOCAL into
-a MACRO, REPT or IRP block, see the LOCAL directive for details.
+a MACRO, REPT or IRP block, see the
+<a href="#dirlocal">LOCAL</a>
+directive for details.
 </p>
 
 <p>
@@ -651,82 +784,100 @@ List of directives supported in Pasmo, in alphabetical order.
 
 <dl>
 
-<dd>DB</dd>
-<dt>
+<dt><a name="direrror">.ERROR</a></dt>
+<dd>
+Generates an error during assembly if the line is actively used, that is,
+in a macro if it gets expanded, in an IF if the current branch is taken.
+All text following the directive is used as error message.
+</dd>
+
+<dt><a name="dirshift">.SHIFT</a></dt>
+<dd>
+Shift MACRO arguments, see <a href="#macros">the chapter about macros</a>.
+</dd>
+
+<dt><a name="dirwarning">.WARNING</a></dt>
+<dd>
+Same as <a href="#direrror">.ERROR</a> but emiting a a warning message
+instead of generating an error.
+</dd>
+
+<dd><a name="dirdb">DB</a></dd>
+<dd>
 Define Byte. The argument is a comma separated list of string literals
 or numeric expressions. The string literals are inserted in the object
 code, and the result of the numeric expression is inserted as a single
 byte, truncating it if needed.
-</dt>
+</dd>
 
-<dd>DEFB</dd>
-<dt>DEFine Byte, same as DB.</dt>
+<dt><a name="dirdefb">DEFB</a></dt>
+<dd>DEFine Byte, same as <a href="#dirdb">DB</a>.</dd>
 
-<dd>DEFL</dd>
-<dt>
+<dt><a name="dirdefl">DEFL</a></dt>
+<dd>
 DEFine Label. Must be preced by a label. The argument must be a
 numeric expression, the result is assigned to the label. The label
 used can be redefined with other DEFL directive.
-</dt>
+</dd>
 
-<dd>DEFM</dd>
-<dt>DEFine Message, same as DB.</dt>
+<dt><a name="dirdefm">DEFM</a></dt>
+<dd>DEFine Message, same as <a href="#dirdb">DB</a>.</dd>
 
-<dd>DEFS</dd>
-<dt>DEFine Space, same as DS.</dt>
+<dt><a name="dirdefs">DEFS</a></dt>
+<dd>DEFine Space, same as <a href="#dirds">DS</a>.</dd>
 
-<dd>DEFW</dd>
-<dt>Same as DW.</dt>
+<dt><a name="dirdefw">DEFW</a></dt>
+<dd>Same as <a href="#dirdw">DW</a>.</dd>
 
-<dd>DS</dd>
-<dt>
+<dt><a name="dirds">DS</a></dt>
+<dd>
 Define Space. Take one or two comma separated arguments.
 The first or only argument is the amount of space to define,
 in bytes. The second is the value used to fill the space,
 if absent 0 will be used.
-</dt>
+</dd>
 
-<dd>DW</dd>
-<dt>
+<dt><a name="dirdw">DW</a></dt>
+<dd>
 Define Word. The argument is a comma separated list of numeric
 expressions. Each numeric expression is evaluated as a two byte word
 and the result inserted in the code in the Z80 word format.
-</dt>
+</dd>
 
-<dd>ELSE</dd>
-<dt>See IF.
-</dt>
+<dt><a name="direlse">ELSE</a></dt>
+<dd>See <a href="#dirif">IF</a>.
+</dd>
 
-<dd>END</dd>
-<dt>
+<dt><a name="dirend">END</a></dt>
+<dd>
 Ends the assembly. All lines after this directive are ignored.
 If it has an argument is evaluated as a numeric expression and the result
 is set as the program entry point. The result of setting an entry point
 depends of the type of code generation used, may be none but even in this
 case may be used for documentation purposes.
-</dt>
+</dd>
 
-<dd>ENDIF</dd>
-<dt>See IF.</dt>
+<dt><a name="direndif">ENDIF</a></dt>
+<dd>See <a href="#dirif">IF</a>.</dd>
 
-<dd>ENDM</dd>
-<dt>Ends a macro, see the chapter about macros.</dt>
+<dt><a name="direndm">ENDM</a></dt>
+<dd>Ends a macro, see <a href="#macros">the chapter about macros</a>.</dd>
 
-<dd>ENDP</dd>
-<dt>Marks the end of a PROC block, see PROC.</dt>
+<dt><a name="direndp">ENDP</a></dt>
+<dd>Marks the end of a PROC block, see PROC.</dd>
 
-<dd>EQU</dd>
-<dt>
+<dt><a name="direqu">EQU</a></dt>
+<dd>
 EQUate. Must be preceded by a label. The argument must be a numeric
 expression, the result is assigned to the label. The label used can't be
 redefined.
-</dt>
+</dd>
 
-<dd>EXITM</dd>
-<dt>Exits a macro, see the chapter about macros.</dt>
+<dt><a name="direxitm">EXITM</a></dt>
+<dd>Exits a macro, see <a href="#macros">the chapter about macros</a>.</dd>
 
-<dd>IF</dd>
-<dt>
+<dt><a name="dirif">IF</a></dt>
+<dd>
 Contional assembly. The argument must be a numeric expression, a result
 of 0 is considered as false, any other as true. If the argument is true the
 following code is assembled until the end of the IF section or an ELSE
@@ -737,92 +888,83 @@ The IF section is ended with a ENDIF or a ENDM directive (in the last case
 the ENDM has also his usual effect).<br>
 IF can be nested, in that case each ELSE and ENDIF takes effect only on his
 corresponding IF, but ENDM ends all pending IF sections.
-</dt>
+</dd>
 
-<dd>INCLUDE</dd>
-<dt>
-Include a file. See the Source code format chapter for the conventions
-used in the argument. The file is readed and the result is the same as if
-the file were copied in the current file instead of the INCLUDE line.<br>
+<dt><a name="dirinclude">INCLUDE</a></dt>
+<dd>
+Include a file. See
+<a href="#sourcefilename">the file names chapter</a>
+for the conventions used in the argument. The file is readed and the result
+is the same as if the file were copied in the current file instead of the
+INCLUDE line.<br>
 The file included may contain INCLUDE directives, and so on.<br>
 INCLUDE directives are processed before the assembly phases, so the use
 of IF directives to conditionally include different files is not allowed.
-</dt>
+</dd>
 
-<dd>INCBIN</dd>
-<dt>
+<dt><a name="dirincbin">INCBIN</a></dt>
+<dd>
 INClude BINary. Include a binary file. Reads a binary file and insert
-his content in the generated code at the current position. See the Source
-code format chapter for the conventions used in the argument.
-</dt>
+his content in the generated code at the current position. See
+<a href="#sourcefilename">the file names chapter</a>
+for the conventions used in the argument.
+</dd>
 
-<dd>IRP</dd>
-<dt>
-Repeat a block of code substituing arguments. See the chapter about
-macros.
-</dt>
+<dt><a name="dirirp">IRP</a></dt>
+<dd>
+Repeat a block of code substituing arguments. See
+<a href="#macros">the chapter about macros</a>.
+</dd>
 
-<dd>LOCAL</dd>
-<dt>
+<dt><a name="dirlocal">LOCAL</a></dt>
+<dd>
 Marks identifiers as local to the current block. The block may be
 a MACRO, REPT, IRP or PROC directive, the local ambit ends in the
 corresponding ENDM or ENDP directive. The ambit begins at the LOCAL
 directive, not at the beginning of the block, take care with that.<br>
 If several LOCAL declations of the same identifier are used in the same
 block, only the first has effect, the others are ignored.
-</dt>
+</dd>
 
-<dd>MACRO</dd>
-<dt>Defines a macro, see the chapter about macros.</dt>
+<dt><a name="dirmacro">MACRO</a></dt>
+<dd>
+Defines a macro, see
+<a href="#macros">the chapter about macros</a>.
+</dd>
 
-<dd>ORG</dd>
-<dt>
+<dt><a name="dirorg">ORG</a></dt>
+<dd>
 ORiGin. Establishes the origin position where to place generated
 code. Several ORG directives can be used in the same program, but if
 the result is that code generated overwrites previous, the result is
 undefined.
-</dt>
+</dd>
 
-<dd>PROC</dd>
-<dt>
+<dt><a name="dirproc">PROC</a></dt>
+<dd>
 Marks the begin of a PROC block. The only effect is to define
 an ambit for LOCAL directives. The block ends with a corresponding
 ENDP directive. The recommended use is to enclose a subroutine in
 a PROC block, but can also be used in any other situation.
-</dt>
+</dd>
 
-<dd>PUBLIC</dd>
-<dt>
+<dt><a name="dirpublic">PUBLIC</a></dt>
+<dd>
 The argument is a comma separated list of identifiers. Each identifier
 is marked as public. When using the --public command line option only the
 identifiers marked as public are included in the symbol table listing.
-</dt>
+</dd>
 
-<dd>REPT</dd>
-<dt>REPeaTs a block. See the chapter about macros.</dt>
+<dt><a name="dirrept">REPT</a></dt>
+<dd>
+REPeaTs a block. See <a href="#macros">the chapter about macros</a>.
+</dd>
 
 </dl>
 
 <h2><a name="operators">Operators</a>.</h2>
 
-<p>
-Table of operators by order of precedence, those in the same line have the
-same precedence:
-</p>
-
-<pre>
-	$, NUL, DEFINED
-	*, /, MOD, %, SHL, SHR, <<, >>
-	+, - (binary)
-	EQ, NE, LT, LE, GT, GE, =, !=, <, >, <=, >=
-	NOT, ~, !, +, - (unary)
-	AND, &
-	OR, |, XOR
-	&&
-	||
-	HIGH, LOW
-	?
-</pre>
+<h3><a name="opergeneral">Generalities</a>.</h3>
 
 <p>
 All numeric values are taken as 16 bits unsigned, using 2 complement or
@@ -854,193 +996,255 @@ operator to the second operand if the first is false, and in the ||
 operator to the second operand if the first is true.
 </p>
 
+<h3><a name="opertable">Table of precedence</a>.</h3>
+
 <p>
-Alphabetic list of operators:
+Table of operators by order of precedence, those in the same line have the
+same precedence:
 </p>
+
+<pre>
+	## (see note)
+	$, NUL, DEFINED
+	*, /, MOD, %, SHL, SHR, <<, >>
+	+, - (binary)
+	EQ, NE, LT, LE, GT, GE, =, !=, <, >, <=, >=
+	NOT, ~, !, +, - (unary)
+	AND, &
+	OR, |, XOR
+	&&
+	||
+	HIGH, LOW
+	?
+</pre>
+
+<p>
+The ## operator is an special case, is processed during the macro expansion,
+see <a href="#macros">the chapter about macros</a>.
+</p>
+
+<h3><a name="operlist">Alphabetic list of operators</a>.</h3>
 
 <dl>
 
-<dd>!</dd>
-<dt>
+<dt>!</dt>
+<dd>
 Logical not. Returns true if his argument is 0, false otherwise.
-</dt>
+</dd>
 
-<dd>!=</dd>
-<dt>Same as NE.</dt>
+<dt>!=</dt>
+<dd>Same as NE.</dd>
 
-<dd>$</dd>
-<dt>
+<dt>##</dt>
+<dd>
+Identifier pasting operator, see
+<a href="#macros">the chapter about macros</a>.
+</dd>
+
+<dt>$</dt>
+<dd>
 Gives the value of the position counter at the begin of the current sentence.
 For example, in a DW directive it gives the position of the first item in
 the list, not the current item.
-</dt>
+</dd>
 
-<dd>%</dd>
-<dt>Same as MOD.</dt>
+<dt>%</dt>
+<dd>Same as MOD.</dd>
 
-<dd>&</dd>
-<dt>Same as AND.</dt>
+<dt>&</dt>
+<dd>Same as AND.</dd>
 
-<dd>&&</dd>
-<dt>
+<dt>&&</dt>
+<dd>
 Logical and. True if both operands are true.
-</dt>
+</dd>
 
-<dd>*</dd>
-<dt>Multiplication.</dt>
+<dt>*</dt>
+<dd>Multiplication.</dd>
 
-<dd>+</dd>
-<dt>Addition or unary +.</dt>
+<dt>+</dt>
+<dd>Addition or unary +.</dd>
 
-<dd>-</dd>
-<dt>Substraction or unary -.</dt>
+<dt>-</dt>
+<dd>Substraction or unary -.</dd>
 
-<dd>/</dd>
-<dt>Integer division, truncated.</dt>
+<dt>/</dt>
+<dd>Integer division, truncated.</dd>
 
-<dd>&lt;</dd>
-<dt>Same as LT</dt>
+<dt>&lt;</dt>
+<dd>Same as LT</dd>
 
-<dd>&lt;&lt;</dd>
-<dt>Same as SHL</dt>
+<dt>&lt;&lt;</dt>
+<dd>Same as SHL</dd>
 
-<dd>&lt;=</dd>
-<dt>Same as LE</dt>
+<dt>&lt;=</dt>
+<dd>Same as LE</dd>
 
-<dd>=</dd>
-<dt>Same as EQ</dt>
+<dt>=</dt>
+<dd>Same as EQ</dd>
 
-<dd>&gt;</dd>
-<dt>Same as GT</dt>
+<dt>&gt;</dt>
+<dd>Same as GT</dd>
 
-<dd>&gt;=</dd>
-<dt>Same as GE</dt>
+<dt>&gt;=</dt>
+<dd>Same as GE</dd>
 
-<dd>&gt;&gt;</dd>
-<dt>Same as SHR</dt>
+<dt>&gt;&gt;</dt>
+<dd>Same as SHR</dd>
 
-<dd>?</dd>
-<dt>
+<dt>?</dt>
+<dd>
 Condtional expression. Must be followed by two expressions separated by a :,
 if the expression on the right of ? is true, the first expressions is
 evaluted, if false, the second.
-</dt>
+</dd>
 
-<dd>|</dd>
-<dt>Same as OR.</dt>
+<dt>|</dt>
+<dd>Same as OR.</dd>
 
-<dd>||</dd>
-<dt>
+<dt>||</dt>
+<dd>
 Logical or. True if one of his operands is true.
-</dt>
+</dd>
 
-<dd>~</dd>
-<dt>Same as NOT</dt>
+<dt>~</dt>
+<dd>Same as NOT</dd>
 
-<dd>AND</dd>
-<dt>Bitwise and operator.</dt>
+<dt>AND</dt>
+<dd>Bitwise and operator.</dd>
 
-<dd>DEFINED</dd>
-<dt>
-The argument must be a label. The result is true if the label is defined,
-false otherwise.
-</dt>
+<dt>DEFINED</dt>
+<dd>
+The argument must be a identifier. The result is true if the identifier is
+defined, false otherwise.
+</dd>
 
-<dd>EQ</dd>
-<dt>
+<dt>EQ</dt>
+<dd>
 Equals. True if both operands are equal, false otherwise.
-</dt>
+</dd>
 
-<dd>GE</dd>
-<dt>
+<dt>GE</dt>
+<dd>
 Greater or equal. True if the left operand is greater or equal than the right.
-</dt>
+</dd>
 
-<dd>GT</dd>
-<dt>
+<dt>GT</dt>
+<dd>
 Greater than. True if the left operand is greater than the right.
-</dt>
+</dd>
 
-<dd>HIGH</dd>
-<dt>
+<dt>HIGH</dt>
+<dd>
 Returns the high order byte of the argument.
-</dt>
+</dd>
 
-<dd>LE</dd>
-<dt>
+<dt>LE</dt>
+<dd>
 Less or equal. True if the left operand is lesser or equal than the right.
-</dt>
+</dd>
 
-<dd>LOW</dd>
-<dt>
+<dt>LOW</dt>
+<dd>
 Returns the low order byte of the argument.
-</dt>
+</dd>
 
-<dd>LT</dd>
-<dt>
+<dt>LT</dt>
+<dd>
 Less than. True if the lefth operand is lesser than the right.
-</dt>
+</dd>
 
-<dd>MOD</dd>
-<dt>
+<dt>MOD</dt>
+<dd>
 Modulus. The remainder of the integer division.
-</dt>
+</dd>
 
-<dd>NE</dd>
-<dt>
+<dt>NE</dt>
+<dd>
 Not equal. False if both operands are equal, true otherwise.
-</dt>
+</dd>
 
-<dd>NOT</dd>
-<dt>
+<dt>NOT</dt>
+<dd>
 Bitwise not. Return the ones complement of his operand.
-</dt>
+</dd>
 
-<dd>NUL</dd>
-<dt>
+<dt>NUL</dt>
+<dd>
 Returns true if there is something at his right, false in other case.
 Useful if the arguments are parameters of macros.
-</dt>
+</dd>
 
-<dd>OR</dd>
-<dt>
+<dt>OR</dt>
+<dd>
 Bitwise or operator.
-</dt>
+</dd>
 
-<dd>SHL</dd>
-<dt>
+<dt>SHL</dt>
+<dd>
 Shif left. Returns the left operand shifted to the left the number of bits
 specified in the right operand, filling with zeroes.
-</dt>
+</dd>
 
-<dd>SHR</dd>
-<dt>
+<dt>SHR</dt>
+<dd>
 Shif right. Returns the left operand shifted to the right the number of bits
 specified in the right operand, filling with zeroes.
-</dt>
+</dd>
 
-<dd>XOR</dd>
-<dt>
+<dt>XOR</dt>
+<dd>
 Bitwise xor (exclusive or) operator.
-</dt>
+</dd>
 
 </dl>
 
 <h2><a name="macros">Macros</a>.</h2>
 
+<h3><a name="macrogeneral">Generalities</a>.</h3>
+
 <p>
-This chapter is unfinished.
+There are two types of macro directives: the proper MACRO directive
+and the repetition directives REPT and IRP. In addition the ENDM and
+EXITM directives controls the end of the macro expansion.
 </p>
+
+<p>
+A macro parameter is an indentifier that when the macro is expanded
+is substitued by the value of the argument applied. The argument can
+be empty, or be composed by one or more tokens. If a MACRO is defined
+inside another macro directive the external parameters are not
+substitued, with the other macro directives the parameter substitution
+is done beginnig by the most external directive. The NUL operator
+can be used to check if an argument is not empty. The .SHIFT directive
+can be used to work with an undeterminated number of arguments.
+</p>
+
+<p>
+Identifier pasting: inside a MACRO the operator ## can be used to join
+two idenfiers resulting in another identifier. This is intended to allow
+the creation of identifiers dependent of macro arguments.
+</p>
+
+<h3><a name="macrodirectives">Directives</a>.</h3>
 
 <dl>
 
-<dt>ENDM</dt>
+<dt><a name="macroshift">.SHIFT</a></dt>
+<dd>
+Can be used only inside a MACRO. The MACRO arguments are shitted one
+place to the left, the first argument is discarded. If there are not
+enough arguments to fill the parameter list after the shift, the
+remaining arguments get undefined.
+</dd>
+
+<dt><a name="macroendm">ENDM</a></dt>
 <dd>
 Marks the end of the current MACRO definition, or the current REPT or
 IRP block. All IF blocks contained in the macro block are also closed.
 </dd>
 
-<dt>EXITM</dt>
+<dt><a name="macroexitm">EXITM</a></dt>
 <dd>
 Exits the curren MACRO, REPT or IRP block. In the case of MACRO, the
 macro expansion is finished, in the other cases the code generation
@@ -1048,11 +1252,44 @@ of the block is terminated and the assembly continues after the
 corresponding ENDM.
 </dd>
 
-<dt>REPT</dt>
+<dt><a name="macroirp">IRP</a></dt>
+<dd>
+<pre>
+	IRP parameter, argument list.
+</pre>
+Repeats the block of code between the IRP directive and his corresponding
+ENDM one time for each of the arguments.
+</dd>
+
+<dt><a name="macromacro">MACRO</a></dt>
+<dd>
+Defines a macro. There are two forms that can be used:
+<pre>
+	name	MACRO [ list of parameters]
+</pre>
+or:
+<pre>
+	MACRO name [ , list of parameters]
+</pre>
+In all cases, list of paramenters is a comma separated list of identifiers,
+and name is the name assigned to the macro created.<br>
+A macro is used by simply specifying his name, and optionally a list of
+arguments. The arguments list does not need to have the same length as the
+parameter list of the macro. If it is longer, the extra arguments are not
+used, but can be retrieved by using .SHIFT inside the MACRO. If it is
+shorter some parameters get undefined, this can be tested inside the MACRO
+by using the NUL operator.
+</dd>
+
+<dt><a name="macrorept">REPT</a></dt>
 <dd>
 Repeats the block of code between the REPT directive and his corresponding
 ENDM the number of times specified in his argument. The argument can be
-0, in that case the block is skipped.
+0, in that case the block is skipped.<br>
+Additionally a loop var can be specified. This var is not a macro parameter,
+is used as a LOCAL DEFL symbol, whose value is incremented in every loop
+iteration. The initial value and incement can be specified, with defaults of
+0 and 1 respectively.
 </dd>
 
 </dl>

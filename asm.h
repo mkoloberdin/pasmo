@@ -1,5 +1,5 @@
 // asm.h
-// Revision 6-dec-2004
+// Revision 21-dec-2004
 
 #include <iostream>
 #include <string>
@@ -32,6 +32,7 @@ public:
 
 	void addincludedir (const std::string & dirname);
 	void addpredef (const std::string & predef);
+	void setheadername (const std::string & headername_n);
 
 	void loadfile (const std::string & filename);
 	void processfile ();
@@ -39,18 +40,17 @@ public:
 	void emitobject (std::ostream & out);
 	void emitplus3dos (std::ostream & out);
 
-	void emittap (std::ostream & out, const std::string & filename);
-	void emittzx (std::ostream & out, const std::string & filename);
-	void emitcdt (std::ostream & out, const std::string & filename);
+	void emittap (std::ostream & out);
+	void emittzx (std::ostream & out);
+	void emitcdt (std::ostream & out);
 
-	void emittapbas (std::ostream & out, const std::string & filename);
-	void emittzxbas (std::ostream & out, const std::string & filename);
-	void emitcdtbas (std::ostream & out, const std::string & filename);
+	void emittapbas (std::ostream & out);
+	void emittzxbas (std::ostream & out);
+	void emitcdtbas (std::ostream & out);
 
 	void emithex (std::ostream & out);
-	void emitamsdos (std::ostream & out, const std::string & filename);
+	void emitamsdos (std::ostream & out);
 
-	//void emitprl (std::ostream & out, Asm & asmoff);
 	void emitprl (std::ostream & out);
 	void emitcmd (std::ostream & out);
 

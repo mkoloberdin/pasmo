@@ -1,13 +1,17 @@
 // tap.cpp
-// Revision 4-dec-2004
+// Revision 13-dec-2004
 
 #include "tap.h"
 
+#include <algorithm>
+
+using std::fill;
 
 tap::CodeHeader::CodeHeader (address init, address size,
 	const std::string & filename)
 {
-	memset (block, 0, sizeof (block) );
+	//memset (block, 0, sizeof (block) );
+	fill (block, block + sizeof (block), byte (0) );
 	block [0]= 19; // Length of block: 17 bytes + flag  + checksum
 	block [1]= 0;
 	block [2]= 0;  // Flag: 00 -> header

@@ -1,5 +1,5 @@
 // asm.cpp
-// Revision 8-dec-2004
+// Revision 21-dec-2004
 
 #include "asm.h"
 #include "token.h"
@@ -37,6 +37,193 @@ using std::make_pair;
 using std::runtime_error;
 using std::logic_error;
 using std::for_each;
+using std::fill;
+
+
+//*********************************************************
+//		Exceptions.
+//*********************************************************
+
+
+namespace {
+
+
+// Errors that must never happen, they are handled for diagnose
+// Pasmo bugs.
+
+
+logic_error UnexpectedError ("Unexpected error");
+logic_error UnexpectedPrefix ("Unexpected prefix");
+logic_error UnexpectedRegisterCode ("Unexpected register code");
+logic_error InvalidFlagConvert ("Inalid flag specified for conversion");
+logic_error InvalidPrefixUsed ("Invalid use of prefix");
+logic_error InvalidRegisterUsed ("Invalid register used");
+logic_error InvalidInstructionType ("Invalid instruction type");
+logic_error LocalNotExist ("Trying to use a non existent local level");
+logic_error LocalNotExpected ("Unexpected local block encountered");
+logic_error AutoLocalNotExpected ("Unexpected autolocal block encountered");
+logic_error InvalidPassValue ("Invalid value of pass");
+logic_error UnexpectedORG ("Unexpected ORG found");
+logic_error UnexpectedMACRO ("Unexpected MACRO found");
+logic_error MACROLostENDM ("Unexpected MACRO without ENDM");
+
+// Errors in the code being assembled.
+
+runtime_error ErrorReadingINCBIN ("Error reading INCBIN file");
+runtime_error ErrorOutput ("Error writing object file");
+
+runtime_error InvalidPredefine ("Can't predefine invalid identifier");
+runtime_error InvalidPredefineValue ("Invalid value for predefined symbol");
+runtime_error InvalidPredefineSyntax ("Syntax error in predefined symbol");
+runtime_error RedefinedDEFL
+	("Invalid definition, previously defined as DEFL");
+runtime_error RedefinedEQU
+	("Invalid definition, previously defined as EQU or label");
+
+runtime_error InvalidInAutolocal ("Invalid use of name in autolocal mode");
+
+runtime_error InvalidSharpSharp ("Invalid use of ##");
+
+runtime_error EQUwithoutlabel ("EQU without label");
+runtime_error DEFLwithoutlabel ("DEFL without label");
+
+runtime_error Lenght1Required ("Invalid literal, length 1 required");
+
+runtime_error DivisionByZero ("Division by zero");
+
+runtime_error IFwithoutENDIF ("IF without ENDIF");
+runtime_error ELSEwithoutIF ("ELSE without IF");
+runtime_error ELSEwithoutENDIF ("ELSE without ENDIF");
+runtime_error ENDIFwithoutIF ("ENDIF without IF");
+
+runtime_error UnbalancedPROC ("Unbalanced PROC");
+runtime_error UnbalancedENDP ("Unbalanced ENDP");
+
+runtime_error MACROwithoutENDM ("MACRO without ENDM");
+runtime_error REPTwithoutENDM ("REPT without ENDM");
+runtime_error IRPWithoutParameters ("IRP without parameters");
+runtime_error IRPwithoutENDM ("IRP without ENDM");
+runtime_error ENDMOutOfMacro ("ENDM outside of macro");
+
+runtime_error ShiftOutsideMacro (".SHIFT outside MACRO");
+runtime_error InvalidBaseValue ("Invalid base value");
+
+runtime_error ParenInsteadOfBracket ("Expected ] but ) found");
+runtime_error BracketInsteadOfParen ("Expected ) but ] found");
+
+runtime_error OffsetOutOfRange ("Offset out of range");
+runtime_error RelativeOutOfRange ("Relative jump out of range");
+runtime_error BitOutOfRange ("Bit position out of range");
+
+runtime_error InvalidInstruction ("Invalid instruction");
+runtime_error InvalidOperand ("Invalid operand");
+runtime_error InvalidFlagJR ("Invalid flag for JR");
+runtime_error InvalidValueRST ("Invalid RST value");
+runtime_error InvalidValueIM ("Invalid IM value");
+
+runtime_error NotValid86 ("Instruction not valid in 86 mode");
+
+runtime_error IsPredefined ("Can't redefine, is predefined");
+
+runtime_error OutOfSyncPRL ("PRL genration failed: out of sync");
+
+class NoInstruction : public runtime_error {
+public:
+	NoInstruction (const Token & tok) :
+		runtime_error ("Unexpected '" + tok.str () +
+			"' used as instruction")
+	{ }
+};
+
+class UndefinedVar : public runtime_error {
+public:
+	UndefinedVar (const std::string & varname) :
+		runtime_error ("Symbol '" + varname + "' is undefined")
+	{ }
+};
+
+class EndLineExpected : public runtime_error {
+public:
+	EndLineExpected (const Token & tok) :
+		runtime_error ("End line expected but '" +
+			tok.str () + "'found")
+	{ }
+};
+
+class IdentifierExpected : public runtime_error {
+public:
+	IdentifierExpected (const Token & tok) :
+		runtime_error ("Identifier expected but '" +
+			tok.str () + "'found")
+	{ }
+};
+
+class MacroExpected : public runtime_error {
+public:
+	MacroExpected (const std::string & name) :
+		runtime_error ("Macro name expected but '" +
+			name + "'found")
+	{ }
+};
+
+class ValueExpected : public runtime_error {
+public:
+	ValueExpected (const Token & tok) :
+		runtime_error ("Value expected but '" +
+			tok.str () + "'found")
+	{ }
+};
+
+
+class SomeOpenExpected : public runtime_error {
+public:
+	SomeOpenExpected (const Token & tok) :
+		runtime_error ("Expected ( or [ but '" +
+			tok.str () + "' found")
+	{ }
+};
+
+
+class TokenExpected : public runtime_error {
+public:
+	TokenExpected (TypeToken ttexpect, const Token & tokfound) :
+		runtime_error ("Expected '" + gettokenname (ttexpect) +
+			"' but '" + tokfound.str () + "' found")
+	{ }
+};
+
+class OffsetExpected : public runtime_error {
+public:
+	OffsetExpected (const Token & tok) :
+		runtime_error ("Offset expression expected but '" +
+			tok.str () + "' found")
+	{ }
+};
+
+class ErrorDirective : public runtime_error {
+public:
+	ErrorDirective (const Token & tok) :
+		runtime_error (".ERROR directive: " + tok.str () )
+	{ }
+};
+
+class UndefinedInPass1 : public runtime_error {
+public:
+	UndefinedInPass1 (const std::string & name) :
+		runtime_error ("The symbol '" + name +
+			"' must be defined in pass 1")
+	{ }
+};
+
+
+
+void checktoken (TypeToken ttexpected, const Token & tok)
+{
+	if (tok.type () != ttexpected)
+		throw TokenExpected (ttexpected, tok);
+}
+
+} // namespace
 
 
 //*********************************************************
@@ -84,7 +271,7 @@ byte getregb86 (regbCode rb)
 	case regL: return reg86BL;
 	default:
 		ASSERT (false);
-		throw logic_error ("Unexpected register code");
+		throw UnexpectedRegisterCode;
 	}
 }
 
@@ -130,7 +317,7 @@ flagCode getflag86 (flagCode fcode)
 	case flagP:  return flag86NS;
 	case flagM:  return flag86S;
 	default:
-		throw logic_error ("Cannot convert invalid flag");
+		throw InvalidFlagConvert;
 	}
 }
 
@@ -170,7 +357,7 @@ std::string nameHLpref (byte prefix)
 	case prefixIX: return "IX";
 	case prefixIY: return "IY";
 	default:
-		throw logic_error ("Invalid use of prefix");
+		throw InvalidPrefixUsed;
 	}
 }
 
@@ -188,7 +375,7 @@ std::string regwName (regwCode code, bool useSP, byte prefix)
 	case regHL: return nameHLpref (prefix);
 	case regAF: return useSP ? "SP" : "AF";
 	default:
-		throw logic_error ("Invalid register");
+		throw InvalidRegisterUsed;
 	}
 }
 
@@ -226,7 +413,7 @@ std::string byteinstName (TypeByteInst ti)
 	case tiOR: return "OR";
 	case tiCP: return "CP";
 	default:
-		throw logic_error ("Invalid instruction type");
+		throw InvalidInstructionType;
 	}
 }
 
@@ -292,7 +479,7 @@ std::string getregbname (regbCode rb, byte prefix= NoPrefix,
 		case prefixIX: return "IXH";
 		case prefixIY: return "IYH";
 		default:
-			throw logic_error ("Unexpected prefix");
+			throw UnexpectedPrefix;
 		}
 	case regL:
 		switch (prefix)
@@ -301,13 +488,13 @@ std::string getregbname (regbCode rb, byte prefix= NoPrefix,
 		case prefixIX: return "IXL";
 		case prefixIY: return "IYL";
 		default:
-			throw logic_error ("Unexpected prefix");
+			throw UnexpectedPrefix;
 		}
 	case reg_HL_:
 		return nameIdesp (prefix, hasdesp, desp);
 	default:
 		ASSERT (false);
-		throw logic_error ("Unexpected register code");
+		throw UnexpectedRegisterCode;
 	}
 }
 
@@ -435,15 +622,18 @@ InitSimple::InitSimple ()
 namespace {
 
 class MacroBase {
-public:
-	MacroBase (std::vector <std::string> & param) :
+protected:
+	MacroBase ()
+	{ }
+	explicit MacroBase (std::vector <std::string> & param) :
 		param (param)
 	{ }
-	MacroBase (const std::string & sparam) :
+	explicit MacroBase (const std::string & sparam) :
 		param (1)
 	{
 		param [0]= sparam;
 	}
+public:
 	size_t getparam (const std::string & name) const;
 	std::string getparam (size_t n) const;
 	static const size_t noparam= size_t (-1);
@@ -466,6 +656,7 @@ std::string MacroBase::getparam (size_t n) const
 	return param [n];
 }
 
+
 class Macro : public MacroBase {
 public:
 	Macro (std::vector <std::string> & param,
@@ -481,10 +672,19 @@ private:
 	const size_t endline;
 };
 
+
 class MacroIrp : public MacroBase {
 public:
 	MacroIrp (const std::string & sparam) :
 		MacroBase (sparam)
+	{ }
+};
+
+
+class MacroRept : public MacroBase {
+public:
+	MacroRept () :
+		MacroBase ()
 	{ }
 };
 
@@ -550,7 +750,7 @@ typedef std::map <std::string, VarData> mapvar_t;
 
 class LocalLevel {
 public:
-	LocalLevel (Asm::In & asmin);
+	LocalLevel (Asm::In & asmin_n);
 	virtual ~LocalLevel ();
 	virtual bool is_auto () const;
 	void add (const std::string & var);
@@ -562,13 +762,13 @@ private:
 
 class AutoLevel : public LocalLevel {
 public:
-	AutoLevel (Asm::In & asmin);
+	AutoLevel (Asm::In & asmin_n);
 	bool is_auto () const;
 };
 
 class ProcLevel : public LocalLevel {
 public:
-	ProcLevel (Asm::In & asmin, size_t line);
+	ProcLevel (Asm::In & asmin_n, size_t line);
 	size_t getline () const;
 private:
 	size_t line;
@@ -576,7 +776,7 @@ private:
 
 class MacroLevel : public LocalLevel {
 public:
-	MacroLevel (Asm::In & asmin);
+	MacroLevel (Asm::In & asmin_n);
 };
 
 class LocalStack {
@@ -597,6 +797,9 @@ private:
 //*********************************************************
 //		class Asm::In declaration
 //*********************************************************
+
+
+class MacroFrameBase;
 
 
 class Asm::In : public AsmFile {
@@ -620,6 +823,7 @@ public:
 	void set86 ();
 
 	void addpredef (const std::string & predef);
+	void setheadername (const std::string & headername_n);
 
 	void loadfile (const std::string & filename);
 	void processfile ();
@@ -631,24 +835,24 @@ public:
 
 	void emitobject (std::ostream & out);
 	void emitplus3dos (std::ostream & out);
-	void emittap (std::ostream & out, const std::string & filename);
+	void emittap (std::ostream & out);
 
-	void writetzxcode (std::ostream & out, const std::string & filename);
-	void emittzx (std::ostream & out, const std::string & filename);
+	void writetzxcode (std::ostream & out);
+	void emittzx (std::ostream & out);
 
-	void writecdtcode (std::ostream & out, const std::string & filename);
-	void emitcdt (std::ostream & out, const std::string & filename);
+	void writecdtcode (std::ostream & out);
+	void emitcdt (std::ostream & out);
 
 	std::string cpcbasicloader ();
-	void emitcdtbas (std::ostream & out, const std::string & filename);
+	void emitcdtbas (std::ostream & out);
 
 	std::string spectrumbasicloader ();
 
-	void emittapbas (std::ostream & out, const std::string & filename);
-	void emittzxbas (std::ostream & out, const std::string & filename);
+	void emittapbas (std::ostream & out);
+	void emittzxbas (std::ostream & out);
 
 	void emithex (std::ostream & out);
-	void emitamsdos (std::ostream & out, const std::string & filename);
+	void emitamsdos (std::ostream & out);
 
 	void emitprl (std::ostream & out);
 	void emitcmd (std::ostream & out);
@@ -851,6 +1055,8 @@ private:
 
 	// Variables.
 
+	std::string headername;
+
 	bool nocase;
 	bool autolocalmode;
 	bool bracketonlymode;
@@ -889,7 +1095,6 @@ private:
 
 	friend class LocalLevel;
 
-	//std::vector <address> localvalue;
 	size_t localcount;
 
 	void initlocal () { localcount= 0; }
@@ -926,10 +1131,14 @@ private:
 	void parseREPT (Tokenizer & tz);
 	void parseIRP (Tokenizer & tz);
 
-	class MacroFrame;
-	friend class MacroFrame;
+	friend class MacroFrameBase;
+
+	MacroFrameBase * pcurrentmframe;
+	MacroFrameBase * getmframe () const { return pcurrentmframe; }
+	void setmframe (MacroFrameBase * pnew) { pcurrentmframe= pnew; }
 
 	// gencode control.
+
 	bool firstcode;
 };
 
@@ -941,8 +1150,8 @@ private:
 
 namespace {
 
-LocalLevel::LocalLevel (Asm::In & asmin) :
-	asmin (asmin)
+LocalLevel::LocalLevel (Asm::In & asmin_n) :
+	asmin (asmin_n)
 { }
 
 LocalLevel::~LocalLevel ()
@@ -973,26 +1182,21 @@ void LocalLevel::add (const std::string & var)
 
 	saved [var]= asmin.mapvar [var];
 
-	//const std::string name= localname (asmin.localcount);
 	const std::string name= asmin.genlocalname ();
 	globalized [var]= name;
-	//++asmin.localcount;
 
 	if (asmin.pass == 1)
 	{
-		//asmin.localvalue.push_back (0);
-		//ASSERT (asmin.localcount == asmin.localvalue.size () );
 		asmin.mapvar [var]= VarData (true);
 	}
 	else
 	{
-		//ASSERT (asmin.localcount <= asmin.localvalue.size () );
 		asmin.mapvar [var]= asmin.mapvar [name];
 	}
 }
 
-AutoLevel::AutoLevel (Asm::In & asmin) :
-	LocalLevel (asmin)
+AutoLevel::AutoLevel (Asm::In & asmin_n) :
+	LocalLevel (asmin_n)
 { }
 
 bool AutoLevel::is_auto () const
@@ -1000,8 +1204,8 @@ bool AutoLevel::is_auto () const
 	return true;
 }
 
-ProcLevel::ProcLevel (Asm::In & asmin, size_t line) :
-	LocalLevel (asmin),
+ProcLevel::ProcLevel (Asm::In & asmin_n, size_t line) :
+	LocalLevel (asmin_n),
 	line (line)
 { }
 
@@ -1010,8 +1214,8 @@ size_t ProcLevel::getline () const
 	return line;
 }
 
-MacroLevel::MacroLevel (Asm::In & asmin) :
-	LocalLevel (asmin)
+MacroLevel::MacroLevel (Asm::In & asmin_n) :
+	LocalLevel (asmin_n)
 { }
 
 LocalStack::~LocalStack ()
@@ -1033,14 +1237,14 @@ void LocalStack::push (LocalLevel * level)
 LocalLevel * LocalStack::top ()
 {
 	if (st.empty () )
-		throw "Not in LOCAL valid level";
+		throw LocalNotExist;
 	return st.top ();
 }
 
 void LocalStack::pop ()
 {
 	if (st.empty () )
-		throw "Not in LOCAL valid level";
+		throw LocalNotExist;
 	delete st.top ();
 	st.pop ();
 }
@@ -1073,12 +1277,14 @@ Asm::In::In () :
 	perr (& cerr),
 	pverb (& nullout),
 	pwarn (& cerr),
-	localcount (0)
+	localcount (0),
+	pcurrentmframe (0)
 {
 }
 
 Asm::In::In (const Asm::In & in) :
 	AsmFile (in),
+	headername (in.headername),
 	nocase (in.nocase),
 	autolocalmode (in.autolocalmode),
 	bracketonlymode (in.bracketonlymode),
@@ -1096,12 +1302,18 @@ Asm::In::In (const Asm::In & in) :
 	perr (in.perr),
 	pverb (in.pverb),
 	pwarn (in.pwarn),
-	localcount (0)
+	localcount (0),
+	pcurrentmframe (0)
 {
 }
 
 Asm::In::~In ()
 {
+}
+
+void Asm::In::setheadername (const std::string & headername_n)
+{
+	headername= headername_n;
 }
 
 void Asm::In::verbose ()
@@ -1122,7 +1334,7 @@ void Asm::In::errtostdout ()
 void Asm::In::setbase (unsigned int addr)
 {
 	if (addr > 65535)
-		throw "Inavlid base value";
+		throw InvalidBaseValue;
 	base= static_cast <address> (addr);
 	current= base;
 	currentinstruction= base;
@@ -1165,7 +1377,7 @@ void Asm::In::addpredef (const std::string & predef)
 	// Get symbol name.
 	Token tr (trdef.gettoken () );
 	if (tr.type () != TypeIdentifier)
-		throw runtime_error ("Can't predefine invalid identifier");
+		throw InvalidPredefine;
 	std::string varname= tr.str ();
 
 	// Get the value, if any.
@@ -1175,17 +1387,16 @@ void Asm::In::addpredef (const std::string & predef)
 	case TypeEqOp:
 		tr= trdef.gettoken ();
 		if (tr.type () != TypeNumber)
-			throw runtime_error
-				("Invalid value for predefined symbol");
+			throw InvalidPredefineValue;
 		value= tr.num ();
 		tr= trdef.gettoken ();
 		if (tr.type () != TypeEndLine)
-			throw ("Invalid value for predefined symbol");
+			throw InvalidPredefineValue;
 		break;
 	case TypeEndLine:
 		break;
 	default:
-		throw runtime_error ("Syntax error in prdefined symbol");
+		throw InvalidPredefineSyntax;
 	}
 
 	* pverb << "Predefining: " << varname << "= " << value << endl;
@@ -1206,10 +1417,7 @@ void Asm::In::checkendline (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
 	if (tok.type () != TypeEndLine)
-	{
-		* perr << "Found " << tok.str () << endl;
-		throw "End line expected and '" + tok.str () + "'found";
-	}
+		throw EndLineExpected (tok);
 }
 
 void Asm::In::gendata (byte data)
@@ -1343,7 +1551,7 @@ address Asm::In::getvalue (const std::string & var,
 	if (vd.def () == NoDefined)
 	{
 		if ( (pass > 1 || required) && ! ignored)
-			throw var + " undefined";
+			throw UndefinedVar (var);
 		else
 			return 0;
 	}
@@ -1382,7 +1590,7 @@ void Asm::In::parsevalue (Tokenizer & tz, address & result,
 		break;
 	case TypeLiteral:
 		if (tok.str ().size () != 1)
-			throw "Invalid literal, length 1 required";
+			throw Lenght1Required;
 		result= tok.str () [0];
 		break;
 	case TypeNUL:
@@ -1401,19 +1609,18 @@ void Asm::In::parsevalue (Tokenizer & tz, address & result,
 	case TypeDEFINED:
 		tok= tz.gettoken ();
 		if (tok.type () != TypeIdentifier)
-			throw "Identifier expected";
+			throw IdentifierExpected (tok);
 		result= isdefined (tok.str () ) ? addrTRUE : addrFALSE;
 		break;
 	default:
-		throw "Value Expected but '" + tok.str () + "' found";
+		throw ValueExpected (tok);
 	}
 }
 
 void Asm::In::expectclose (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	if  (tok.type () != TypeClose)
-		throw "')' expected but '" + tok.str () + "' found";
+	checktoken (TypeClose, tok);
 }
 
 void Asm::In::parseopen (Tokenizer & tz, address & result,
@@ -1456,7 +1663,7 @@ void Asm::In::parsemuldiv (Tokenizer & tz, address & result,
 			if (guard == 0)
 			{
 				if ( (required || pass >= 2) && ! ignored)
-					throw "Division by zero";
+					throw DivisionByZero;
 				else
 					result= 0;
 			}
@@ -1468,7 +1675,7 @@ void Asm::In::parsemuldiv (Tokenizer & tz, address & result,
 			if (guard == 0)
 			{
 				if ( (required || pass >= 2) && ! ignored)
-					throw "Division by zero";
+					throw DivisionByZero;
 				else
 					result= 0;
 			}
@@ -1485,7 +1692,7 @@ void Asm::In::parsemuldiv (Tokenizer & tz, address & result,
 			break;
 		default:
 			ASSERT (false);
-			throw "Unexpected error";
+			throw UnexpectedError;
 		}
 		tok= tz.gettoken ();
 		tt= tok.type ();
@@ -1513,7 +1720,7 @@ void Asm::In::parseplusmin (Tokenizer & tz, address & result,
 			break;
 		default:
 			ASSERT (false);
-			throw "Unexpected error";
+			throw UnexpectedError;
 		}
 		tok= tz.gettoken ();
 		tt= tok.type ();
@@ -1566,7 +1773,7 @@ void Asm::In::parserelops (Tokenizer & tz, address & result,
 			break;
 		default:
 			ASSERT (false);
-			throw "Unexpected error";
+			throw UnexpectedError;
 		}
 		tok= tz.gettoken ();
 		tt= tok.type ();
@@ -1603,7 +1810,7 @@ void Asm::In::parsenot (Tokenizer & tz, address & result,
 			break;
 		default:
 			ASSERT (false);
-			throw "Unexpected error";
+			throw UnexpectedError;
 		}
 	}
 	else
@@ -1651,7 +1858,7 @@ void Asm::In::parseorxor (Tokenizer & tz, address & result,
 			break;
 		default:
 			ASSERT (false);
-			throw "Unexpected error";
+			throw UnexpectedError;
 		}
 		tok= tz.gettoken ();
 		tt= tok.type ();
@@ -1736,9 +1943,10 @@ void Asm::In::parsecond (Tokenizer & tz, address & result,
 	{
 		bool usefirst= (result != 0);
 		parsebase (tz, result, required, ignored || ! usefirst);
+
 		tok= tz.gettoken ();
-		if (tok.type () != TypeColon)
-			throw runtime_error ("Expected ':'");
+		checktoken (TypeColon, tok);
+
 		address second;
 		parsebase (tz, second, required, ignored || usefirst);
 		if (! usefirst)
@@ -1767,56 +1975,55 @@ address Asm::In::parseexpr (bool required, const Token & /* tok */,
 void Asm::In::expectcomma (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	if  (tok.type () != TypeComma)
-		throw "Comma expected but '" + tok.str () + "' found";
+	checktoken (TypeComma, tok);
 }
 
 void Asm::In::expectcloseindir (Tokenizer & tz, bool bracket)
 {
 	Token tok= tz.gettoken ();
-	TypeToken tt= tok.type ();
 	if (bracket)
-	{
-		if (tt != TypeCloseBracket)
-			throw runtime_error (
-				"'Expected ] but '" + tok.str () + "' found");
-	}
+		checktoken (TypeCloseBracket, tok);
 	else
-	{
-		if (tt != TypeClose)
-			throw runtime_error (
-				"')' expected but '" + tok.str () + "' found");
-	}
+		checktoken (TypeClose, tok);
 }
 
 bool Asm::In::parseopenindir (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	switch (tok.type () )
+
+	bool isbracket;
+	if (bracketonlymode)
 	{
-	case TypeOpen:
-		if (bracketonlymode)
-			throw runtime_error ("Expected [ but ( found");
-		return false;
-	case TypeOpenBracket:
-		return true;
-	default:
-		throw "Expected ( or [ but '" + tok.str () + "' found";
+		checktoken (TypeOpenBracket, tok);
+		isbracket= true;
 	}
+	else
+	{
+		switch (tok.type () )
+		{
+		case TypeOpen:
+			isbracket= false;
+			break;
+		case TypeOpenBracket:
+			isbracket= true;
+			break;
+		default:
+			throw SomeOpenExpected (tok);
+		}
+	}
+	return isbracket;
 }
 
 void Asm::In::expectA (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	if  (tok.type () != TypeA)
-		throw "Register A expected but '" + tok.str () + "' found";
+	checktoken (TypeA, tok);
 }
 
 void Asm::In::expectC (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	if  (tok.type () != TypeC)
-		throw "Register C expected but '" + tok.str () + "' found";
+	checktoken (TypeC, tok);
 }
 
 void Asm::In::parseIF (Tokenizer & tz)
@@ -1887,7 +2094,7 @@ void Asm::In::parseIF (Tokenizer & tz)
 		if (passeof () )
 		{
 			setline (ifline);
-			throw runtime_error ("IF without ENDIF");
+			throw IFwithoutENDIF;
 		}
 	}
 }
@@ -1897,7 +2104,7 @@ void Asm::In::parseELSE (Tokenizer & tz)
 	checkendline (tz);
 
 	if (iflevel == 0)
-		throw "ELSE without IF";
+		throw ELSEwithoutIF;
 
 	* pout << "\t\tELSE (false)" << endl;
 
@@ -1947,7 +2154,7 @@ void Asm::In::parseELSE (Tokenizer & tz)
 	if (passeof () )
 	{
 		setline (elseline);
-		throw runtime_error ("ELSE without ENDIF");
+		throw ELSEwithoutENDIF;
 	}
 	--iflevel;
 }
@@ -1956,7 +2163,7 @@ void Asm::In::parseENDIF (Tokenizer & tz)
 {
 	checkendline (tz);
 	if (iflevel == 0)
-		throw runtime_error ("ENDIF without IF");
+		throw ENDIFwithoutIF;
 	--iflevel;
 	* pout << "\t\tENDIF" << endl;
 }
@@ -1978,9 +2185,9 @@ void Asm::In::parseline (Tokenizer & tz)
 		parseORG (tz);
 		break;
 	case TypeEQU:
-		throw runtime_error ("EQU whithout label");
+		throw EQUwithoutlabel;
 	case TypeDEFL:
-		throw runtime_error ("DEFL without label");
+		throw DEFLwithoutlabel;
 	case TypeIdentifier:
 		parselabel (tz, tok.str () );
 		break;
@@ -2000,8 +2207,7 @@ void Asm::In::parseline (Tokenizer & tz)
 		// Style: MACRO identifier, params
 		tok= tz.gettoken ();
 		if (tok.type () != TypeIdentifier)
-			throw "Identifier expected but '" +
-				tok.str () + "' found";
+			throw IdentifierExpected (tok);
 		{
 			const std::string & name= tok.str ();
 			parseMACRO (tz, name, true); 
@@ -2052,8 +2258,7 @@ void Asm::In::finishautolocal ()
 				localstack.pop ();
 			}
 			else
-				throw logic_error
-					("Unexpected autolocal block");
+				throw AutoLocalNotExpected;
 		}
 	}
 }
@@ -2103,7 +2308,7 @@ void Asm::In::dopass ()
 	// Pass finalization.
 
 	if (iflevel > 0)
-		throw "IF without ENDIF";
+		throw IFwithoutENDIF;
 
 	finishautolocal ();
 
@@ -2112,10 +2317,9 @@ void Asm::In::dopass ()
 		ProcLevel * proc=
 			dynamic_cast <ProcLevel *> (localstack.top () );
 		if (proc == NULL)
-			throw logic_error
-				("Unexpected MACRO or local element open");
+			throw LocalNotExpected;
 		setline (proc->getline () );
-		throw "Unbalanced PROC";
+		throw UnbalancedPROC;
 	}
 
 	* pverb << "Pass " << pass << " finished" << endl;
@@ -2208,16 +2412,17 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 		// Only come here legally when a line invoking
 		// a macro contains a label.
 		{
-			Macro * pmacro= getmacro (tok.str () );
+			std::string macroname= tok.str ();
+			Macro * pmacro= getmacro (macroname);
 			if (pmacro != NULL)
-				expandMACRO (tok.str (), * pmacro, tz);
+				expandMACRO (macroname, * pmacro, tz);
 			else
-				throw "Unexpected identifier " + tok.str ();
+				throw MacroExpected (macroname);
 		}
 		break;
 	case TypeORG:
 		ASSERT (false);
-		throw logic_error ("Unexpected error in ORG");
+		throw UnexpectedORG;
 	case TypeDEFB:
 	case TypeDB:
 	case TypeDEFM:
@@ -2255,7 +2460,7 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 	case TypeMACRO:
 		// Is processed previously.
 		ASSERT (false);
-		throw logic_error ("Unexpected error in MACRO");
+		throw UnexpectedMACRO;
 	case TypeREPT:
 		parseREPT (tz);
 		break;
@@ -2263,7 +2468,7 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 		parseIRP (tz);
 		break;
 	case TypeENDM:
-		throw "ENDM outside of MACRO";
+		throw ENDMOutOfMacro;
 	case TypeIM:
 		parseIM (tz);
 		break;
@@ -2367,11 +2572,13 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 		parseSET (tz);
 		break;
 	case TypeEQU:
-		throw runtime_error ("EQU without label");
+		throw EQUwithoutlabel;
 	case TypeDEFL:
-		throw runtime_error ("DEFL without label");
+		throw DEFLwithoutlabel;
+	case Type_SHIFT:
+		throw ShiftOutsideMacro;
 	default:
-		throw "Unexpected " + tok.str () + " used as instruction";
+		throw NoInstruction (tok);
 	}
 }
 
@@ -2428,19 +2635,18 @@ void Asm::In::parsePUBLIC (Tokenizer & tz)
 	for (;;)
 	{
 		Token tok= tz.gettoken ();
-		if (tok.type () != TypeIdentifier)
-			throw "Unexpected " + tok.str () + " in PUBLIC";
+		checktoken (TypeIdentifier, tok);
+
 		std::string name= tok.str ();
 		if (isautolocalname (name) )
-			throw "Invalid PUBLIC name in autolocal mode";
+			throw InvalidInAutolocal;
+
 		setpublic.insert (name);
 		varname.push_back (name);
 		tok= tz.gettoken ();
 		if (tok.type () == TypeEndLine)
 			break;
-		if (tok.type () != TypeComma)
-			throw "Expected comma but found " + tok.str () +
-				" in PUBLIC";
+		checktoken (TypeComma, tok);
 	}
 	* pout << "\t\tPUBLIC ";
 	for (size_t i= 0, l= varname.size (); i < l; ++i)
@@ -2477,11 +2683,11 @@ void Asm::In::parseLOCAL (Tokenizer & tz)
 	for (;;)
 	{
 		Token tok= tz.gettoken ();
-		if (tok.type () != TypeIdentifier)
-			throw "Unexpected " + tok.str () + " in LOCAL";
+		checktoken (TypeIdentifier, tok);
+
 		std::string name= tok.str ();
 		if (isautolocalname (name) )
-			throw "Invalid LOCAL name in autolocal mode";
+			throw InvalidInAutolocal;
 
 		plocal->add (name);
 		varname.push_back (name);
@@ -2489,9 +2695,7 @@ void Asm::In::parseLOCAL (Tokenizer & tz)
 		TypeToken tt= tok.type ();
 		if (tt == TypeEndLine)
 			break;
-		if (tt != TypeComma)
-			throw "Expected comma but found " + tok.str () +
-				" in LOCAL";
+		checktoken (TypeComma, tok);
 	}
 	* pout << "\t\tLOCAL ";
 	for (size_t i= 0, l= varname.size (); i < l; ++i)
@@ -2525,7 +2729,7 @@ void Asm::In::parseENDP (Tokenizer & tz)
 	if (localstack.empty () ||
 		dynamic_cast <ProcLevel *> (localstack.top () ) == NULL)
 	{
-		throw "Unbalanced ENDP";
+		throw UnbalancedENDP;
 	}
 	localstack.pop ();
 
@@ -2536,7 +2740,7 @@ void Asm::In::parse_ERROR (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
 	ASSERT (tok.type () == TypeLiteral);
-	throw runtime_error (".ERROR directive: " + tok.str () );
+	throw ErrorDirective (tok);
 }
 
 void Asm::In::parse_WARNING (Tokenizer & tz)
@@ -2545,13 +2749,6 @@ void Asm::In::parse_WARNING (Tokenizer & tz)
 	ASSERT (tok.type () == TypeLiteral);
 	* pwarn << "WARNING: " << tok.str () << endl;
 }
-
-namespace {
-
-const char redefinedEQU []= " Redefined from previous EQU or label";
-const char redefinedDEFL []= " Redefined from previous DEFL";
-
-} // namespace
 
 bool Asm::In::setequorlabel (const std::string & name, address value)
 {
@@ -2571,21 +2768,21 @@ bool Asm::In::setequorlabel (const std::string & name, address value)
 	{
 	case NoDefined:
 		if (pass > 1)
-			throw name + " undefined in pass 1";
+			throw UndefinedInPass1 (name);
 		// Else nothing to do.
 		break;
 	case DefinedDEFL:
-		throw name + redefinedDEFL;
+		throw RedefinedDEFL;
 	case PreDefined:
-		throw logic_error ("Label already predefined");
+		throw IsPredefined;
 	case DefinedPass1:
 		if (pass == 1)
-			throw name + redefinedEQU;
+			throw RedefinedEQU;
 		// Else nothing to do (this may chnage).
 		break;
 	case DefinedPass2:
 		ASSERT (pass > 1);
-		throw name + redefinedEQU;
+		throw RedefinedEQU;
 	}
 	Defined def;
 	switch (pass)
@@ -2597,7 +2794,7 @@ bool Asm::In::setequorlabel (const std::string & name, address value)
 	case 2:
 		def= DefinedPass2; break;
 	default:
-		throw logic_error ("Invalid value of pass");
+		throw InvalidPassValue;
 	}
 	return setvar (name, value, def);
 }
@@ -2627,7 +2824,7 @@ bool Asm::In::setdefl (const std::string & name, address value)
 	case PreDefined:
 	case DefinedPass1:
 	case DefinedPass2:
-		throw name + redefinedEQU;
+		throw RedefinedEQU;
 	}
 	return setvar (name, value, DefinedDEFL);
 }
@@ -2709,7 +2906,7 @@ void Asm::In::parseMACRO (Tokenizer & tz, const std::string & name,
 	{
 		finishautolocal ();
 		if (isautolocalname (name) )
-			throw "Invalid macro name in autolocal mode";
+			throw InvalidInAutolocal;
 	}
 
 	// Get parameter list.
@@ -2720,16 +2917,13 @@ void Asm::In::parseMACRO (Tokenizer & tz, const std::string & name,
 	{
 		if (needcomma)
 		{
-			if (tt != TypeComma)
-				throw runtime_error ("Comma expected");
+			checktoken (TypeComma, tok);
 			tok= tz.gettoken ();
 			tt= tok.type ();
 		}
 		for (;;)
 		{
-			if (tt != TypeIdentifier)
-				throw "Identifier expected but '" +
-					tok.str () + "' found";
+			checktoken (TypeIdentifier, tok);
 
 			if (param.empty () )
 				* pout << "Params: ";
@@ -2781,7 +2975,7 @@ void Asm::In::parseMACRO (Tokenizer & tz, const std::string & name,
 	if (passeof () )
 	{
 		setline (macroline);
-		throw runtime_error ("MACRO without ENDM");
+		throw MACROwithoutENDM;
 	}
 
 	// Store the macro definition.
@@ -2797,11 +2991,11 @@ byte Asm::In::parsedesp (Tokenizer & tz, bool bracket)
 	{
 	case TypeClose:
 		if (bracket)
-			throw runtime_error ("Expected ] but ) found");
+			throw ParenInsteadOfBracket;
 		break;
 	case TypeCloseBracket:
 		if (! bracket)
-			throw runtime_error ("Expected ) but ] found");
+			throw BracketInsteadOfParen;
 		break;
 	case TypePlus:
 		tok= tz.gettoken ();
@@ -2811,7 +3005,7 @@ byte Asm::In::parsedesp (Tokenizer & tz, bool bracket)
 			// case someone uses hexadecimals such as 0FFh
 			// as offsets.
 			if (addr > 255)
-				throw "Offset out of range";
+				throw OffsetOutOfRange;
 			desp= static_cast <byte> (addr);
 			expectcloseindir (tz, bracket);
 		}
@@ -2821,14 +3015,13 @@ byte Asm::In::parsedesp (Tokenizer & tz, bool bracket)
 		{
 			address addr= parseexpr (false, tok, tz);
 			if (addr > 128)
-				throw "Offset out of range";
+				throw OffsetOutOfRange;
 			desp= static_cast <byte> (256 - addr);
 			expectcloseindir (tz, bracket);
 		}
 		break;
 	default:
-		throw "Expected '+', '-' or ')' but '" +
-			tok.str () + "' found";
+		throw OffsetExpected (tok);
 	}
 	return desp;
 }
@@ -2846,7 +3039,7 @@ void Asm::In::no8080 ()
 void Asm::In::no86 ()
 {
 	if (mode86)
-		throw runtime_error ("Instruction not valid in 86 mode");
+		throw NotValid86;
 }
 
 bool Asm::In::parsebyteparam (Tokenizer & tz, TypeToken tt,
@@ -2882,28 +3075,28 @@ bool Asm::In::parsebyteparam (Tokenizer & tz, TypeToken tt,
 		regcode= regL; break;
 	case TypeIXH:
 		if (prevprefix == prefixIY)
-			throw "Invalid instruction";
+			throw InvalidInstruction;
 		if (prevprefix == NoPrefix)
 			prefix= prefixIX;
 		regcode= regH;
 		break;
 	case TypeIYH:
 		if (prevprefix == prefixIX)
-			throw "Invalid instruction";
+			throw InvalidInstruction;
 		if (prevprefix == NoPrefix)
 			prefix= prefixIY;
 		regcode= regH;
 		break;
 	case TypeIXL:
 		if (prevprefix == prefixIY)
-			throw "Invalid instruction";
+			throw InvalidInstruction;
 		if (prevprefix == NoPrefix)
 			prefix= prefixIX;
 		regcode= regL;
 		break;
 	case TypeIYL:
 		if (prevprefix == prefixIX)
-			throw "Invalid instruction";
+			throw InvalidInstruction;
 		if (prevprefix == NoPrefix)
 			prefix= prefixIY;
 		regcode= regL;
@@ -2942,13 +3135,12 @@ bool Asm::In::parsebyteparam (Tokenizer & tz, TypeToken tt,
 					return false;
 				}
 				else
-					throw runtime_error (
-						"Expected ] but " +
-						tok.str () + " found");
+					throw TokenExpected
+						(TypeCloseBracket, tok);
 			}
 		}
 		if (prevprefix != NoPrefix)
-			throw "Invalid instruction";
+			throw InvalidInstruction;
 		break;
 	default:
 		return false;
@@ -3071,7 +3263,7 @@ void Asm::In::dobyteparamCB (Tokenizer & tz, byte codereg,
 			getregbname (reg, prefix, hasdesp, desp) );
 	}
 	else
-		throw "Invalid operand";
+		throw InvalidOperand;
 	no8080 ();
 }
 
@@ -3089,7 +3281,7 @@ void Asm::In::parseIM (Tokenizer & tz)
 	case 2:
 		code= 0x5E; break;
 	default:
-		throw "Invalid IM value";
+		throw InvalidValueIM;
 	}
 	checkendline (tz);
 
@@ -3108,7 +3300,7 @@ void Asm::In::parseRST (Tokenizer & tz)
 	checkendline (tz);
 
 	if (addr & ~ static_cast <address> (0x38) )
-		throw runtime_error ("Invalid RST value");
+		throw InvalidValueRST;
 
 	no86 ();
 
@@ -3325,9 +3517,9 @@ void Asm::In::parseLDsimple (Tokenizer & tz, regbCode regcode,
 		regbCode rr2= reg2;
 
 		if (regcode == reg_HL_ && reg2 == reg_HL_)
-			throw runtime_error ("Invalid instruction");
+			throw InvalidInstruction;
 		if (prevprefix != NoPrefix && prefix != NoPrefix)
-			throw "Invalid instruction";
+			throw InvalidInstruction;
 		if (prefix)
 		{
 			no86 ();
@@ -3432,7 +3624,8 @@ void Asm::In::parseLDdouble_nn_ (Tokenizer & tz, regwCode regcode,
 		gencodeword (value);
 		break;
 	default:
-		throw "Unexpected error";
+		ASSERT (false);
+		throw UnexpectedRegisterCode;
 	}
 
 	showcode ("LD " + regwName (regcode, nameSP, prefix) +
@@ -3555,7 +3748,7 @@ void Asm::In::parseLD_IrPlus (Tokenizer & tz, bool bracket, byte prefix)
 
 		checkendline (tz);
 		if (secondprefix != NoPrefix || hasdesp || reg == reg_HL_)
-			throw "Operand invalid";
+			throw InvalidOperand;
 		no86 ();
 
 		byte code= 0x70 + reg;
@@ -3655,7 +3848,7 @@ void Asm::In::parseLD_nn_ (Tokenizer & tz, bool bracket)
 		}
 		break;
 	default:
-		throw "Second operand invalid in LD (nn),";
+		throw InvalidOperand;
 	}
 	checkendline (tz);
 
@@ -3801,12 +3994,12 @@ void Asm::In::parseLD (Tokenizer & tz)
 		break;
 	case TypeOpen:
 		if (bracketonlymode)
-			throw runtime_error ("Invalid LD first operand");
+			throw InvalidOperand;
 	case TypeOpenBracket:
 		parseLD_ (tz, tt == TypeOpenBracket);
 		break;
 	default:
-		throw "Invalid LD first operand";
+		throw InvalidOperand;
 	}
 }
 
@@ -3894,22 +4087,22 @@ void Asm::In::parseADDADCSBCHL (Tokenizer & tz, byte prefix, byte basecode)
 		reg= regDE; break;
 	case TypeHL:
 		if (prefix != NoPrefix)
-			throw "Operand invalid";
+			throw InvalidOperand;
 		reg= regHL; break;
 	case TypeSP:
 		reg= regSP; break;
 	case TypeIX:
 		if (prefix != prefixIX)
-			throw "Operand invalid";
+			throw InvalidOperand;
 		reg= regHL;
 		break;
 	case TypeIY:
 		if (prefix != prefixIY)
-			throw "Operand invalid";
+			throw InvalidOperand;
 		reg= regHL;
 		break;
 	default:
-		throw "Operand invalid";
+		throw InvalidOperand;
 	}
 	checkendline (tz);
 	if (prefix != NoPrefix)
@@ -3936,7 +4129,7 @@ void Asm::In::parseADDADCSBCHL (Tokenizer & tz, byte prefix, byte basecode)
 			break;
 		default:
 			ASSERT (false);
-			throw logic_error ("This must never happen!");
+			throw UnexpectedRegisterCode;
 		}
 	}
 	else
@@ -3954,7 +4147,7 @@ void Asm::In::parseADDADCSBCHL (Tokenizer & tz, byte prefix, byte basecode)
 	case codeADCHL: aux= "ADC"; break;
 	case codeSBCHL: aux= "SBC"; break;
 	default:
-		throw logic_error ("Unexpected code");
+		throw UnexpectedRegisterCode;
 	}
 	showcode (aux + ' ' + nameHLpref (prefix) + ", " +
 		regwName (reg, nameSP, reg == regHL ? prefix : NoPrefix) );
@@ -3985,7 +4178,7 @@ void Asm::In::parseADD (Tokenizer & tz)
 		parseADDADCSBCHL (tz, prefixIY, codeADDHL);
 		return;
 	default:
-		throw "Invalid operand";
+		throw InvalidOperand;
 	}
 }
 
@@ -4002,7 +4195,7 @@ void Asm::In::parseADC (Tokenizer & tz)
 		parseADDADCSBCHL (tz, NoPrefix, codeADCHL);
 		return;
 	default:
-		throw "Invalid param to ADC";
+		throw InvalidOperand;
 	}
 }
 
@@ -4019,7 +4212,7 @@ void Asm::In::parseSBC (Tokenizer & tz)
 		parseADDADCSBCHL (tz, NoPrefix, codeSBCHL);
 		break;
 	default:
-		throw "Invalid operand to SBC";
+		throw InvalidOperand;
 	}
 }
 
@@ -4066,7 +4259,7 @@ void Asm::In::parsePUSHPOP (Tokenizer & tz, bool isPUSH)
 		prefix= prefixIY;
 		break;
 	default:
-		throw "Unexpected " + tok.str ();
+		throw InvalidOperand;
 	}
 	checkendline (tz);
 
@@ -4263,7 +4456,7 @@ void Asm::In::parseJP_ (Tokenizer & tz, bool bracket)
 		prefix= prefixIY;
 		break;
 	default:
-		throw "Invalid JP ()";
+		throw InvalidOperand;
 	}
 	expectcloseindir (tz, bracket);
 	checkendline (tz);
@@ -4375,7 +4568,7 @@ void Asm::In::parserelative (Tokenizer & tz, Token tok, byte code,
 			* pout << "addr= " << addr <<
 				" current= " << current <<
 				" dif= " << dif << endl;
-			throw "Relative jump out of range";
+			throw RelativeOutOfRange;
 		}
 	}
 	signed char reldesp = static_cast <signed char> (dif);
@@ -4402,7 +4595,7 @@ void Asm::In::parseJR (Tokenizer & tz)
 		instrname+= tok.str ();
 		instrname+= ',';
 		if (fcode > flagC)
-			throw runtime_error ("Invalid flag for JR");
+			throw InvalidFlagJR;
 		if (mode86)
 			code= 0x70 | getflag86 (fcode);
 		else
@@ -4434,7 +4627,7 @@ void Asm::In::parseDJNZ (Tokenizer & tz)
 				* pout << "addr= " << addr <<
 					" current= " << current <<
 					" dif= " << dif << endl;
-				throw "Relative jump out of range";
+				throw RelativeOutOfRange;
 			}
 		}
 		signed char reldesp = static_cast <signed char> (dif);
@@ -4571,7 +4764,7 @@ void Asm::In::parseINCDEC (Tokenizer & tz, bool isINC)
 		break;
 	case TypeOpen:
 		if (bracketonlymode)
-			throw runtime_error ("Invalid expression");
+			throw InvalidOperand;
 	case TypeOpenBracket:
 		{
 			bool bracket= tt == TypeOpenBracket;
@@ -4594,12 +4787,12 @@ void Asm::In::parseINCDEC (Tokenizer & tz, bool isINC)
 					prefixIY, true, desp);
 				break;
 			default:
-				throw "Invalid operand " + tok.str ();
+				throw InvalidOperand;
 			}
 		}
 		break;
 	default:
-		throw "Invalid operand " + tok.str ();
+		throw InvalidOperand;
 	}
 }
 
@@ -4623,7 +4816,7 @@ void Asm::In::parseEX (Tokenizer & tz)
 		expectcomma (tz);
 		tok= tz.gettoken ();
 		if (tok.type () != TypeAFp)
-			throw "Invalid operand for EX";
+			throw InvalidOperand;
 		no86 ();
 		gencode (0x08);
 		showcode ("EX AF, AF'");
@@ -4633,7 +4826,7 @@ void Asm::In::parseEX (Tokenizer & tz)
 		expectcomma (tz);
 		tok= tz.gettoken ();
 		if (tok.type () != TypeHL)
-			throw "Invalid operand for EX";
+			throw InvalidOperand;
 		if (mode86)
 			gencode (0x87, 0xD3);
 		else
@@ -4642,13 +4835,13 @@ void Asm::In::parseEX (Tokenizer & tz)
 		break;
 	case TypeOpen:
 		if (bracketonlymode)
-			throw runtime_error ("Invalid operand for EX");
+			throw InvalidOperand;
 	case TypeOpenBracket:
 		{
 			bool bracket= tt == TypeOpenBracket;
 			tok= tz.gettoken ();
 			if (tok.type () != TypeSP)
-				throw "Invalid operand for EX";
+				throw InvalidOperand;
 			expectcloseindir (tz, bracket);
 			expectcomma (tz);
 			tok= tz.gettoken ();
@@ -4673,12 +4866,12 @@ void Asm::In::parseEX (Tokenizer & tz)
 				no8080 ();
 				break;
 			default:
-				throw "Invalid operand for EX";
+				throw InvalidOperand;
 			}
 		}
 		break;
 	default:
-		throw "Invalid operand for EX";
+		throw InvalidOperand;
 	}
 	checkendline (tz);
 }
@@ -4727,7 +4920,7 @@ void Asm::In::parseIN (Tokenizer & tz)
 		checkendline (tz);
 		return;
 	default:
-		throw "Invalid operand";
+		throw InvalidOperand;
 	}
 
 	std::string regname= tok.str ();
@@ -4788,7 +4981,7 @@ void Asm::In::parseOUT (Tokenizer & tz)
 	case TypeL:
 		code= 0x69; break;
 	default:
-		throw "Invalid operand";
+		throw InvalidOperand;
 	}
 	std::string regname= tok.str ();
 	checkendline (tz);
@@ -4806,7 +4999,7 @@ void Asm::In::dobit (Tokenizer & tz, byte basecode, std::string instrname)
 	Token tok= tz.gettoken ();
 	address addr= parseexpr (false, tok, tz);
 	if (addr > 7)
-		throw "Bit position out of range";
+		throw BitOutOfRange;
 	expectcomma (tz);
 	instrname+= ' ';
 	instrname+= '0' + addr;
@@ -4862,8 +5055,7 @@ void Asm::In::parseDEFB (Tokenizer & tz)
 		tok= tz.gettoken ();
 		if (tok.type () == TypeEndLine)
 			break;
-		if (tok.type () != TypeComma)
-			throw "Unexpected " + tok.str ();
+		checktoken (TypeComma, tok);
 	}
 
 	ostringstream oss;
@@ -4882,8 +5074,7 @@ void Asm::In::parseDEFW (Tokenizer & tz)
 		tok= tz.gettoken ();
 		if (tok.type () == TypeEndLine)
 			break;
-		if (tok.type () != TypeComma)
-			throw "Unexpected " + tok.str ();
+		checktoken (TypeComma, tok);
 	}
 
 	ostringstream oss;
@@ -4897,21 +5088,13 @@ void Asm::In::parseDEFS (Tokenizer & tz)
 	address count= parseexpr (true, tok, tz);
 	byte value= 0;
 	tok= tz.gettoken ();
-	switch (tok.type () )
+	if (tok.type () != TypeEndLine)
 	{
-	case TypeEndLine:
-		// Nothing to do
-		break;
-	case TypeComma:
+		checktoken (TypeComma, tok);
 		tok= tz.gettoken ();
-		{
-			address calcvalue= parseexpr (false, tok, tz);
-			checkendline (tz);
-			value= static_cast <byte> (calcvalue);
-		}
-		break;
-	default:
-		throw "Unexpected " + tok.str ();
+		address calcvalue= parseexpr (false, tok, tz);
+		checkendline (tz);
+		value= static_cast <byte> (calcvalue);
 	}
 	for (address i= 0; i < count; ++i)
 		gendata (value);
@@ -4941,8 +5124,7 @@ void Asm::In::parseINCBIN (Tokenizer & tz)
 			if (f.eof () )
 				break;
 			else
-				throw "Error in INCBIN reading \"" + 
-					includefile + "\" file";
+				throw ErrorReadingINCBIN;
 		}
 	}
 }
@@ -4979,7 +5161,14 @@ void getmacroparams (MacroParamList & params, Tokenizer & tz)
 	}
 }
 
-Tokenizer substmacroparams (MacroBase & macro, Tokenizer & tz,
+void substparam (Tokenizer & tz, const MacroParam & param)
+{
+	const size_t l= param.size ();
+	for (size_t i= 0; i < l; ++i)
+		tz.push_back (param [i] );
+}
+
+Tokenizer substmacroparams (const MacroBase & macro, Tokenizer & tz,
 	const MacroParamList & params)
 {
 	Tokenizer r (tz.getnocase () );
@@ -5002,21 +5191,16 @@ Tokenizer substmacroparams (MacroBase & macro, Tokenizer & tz,
 				// If there are no sufficient parameters
 				// expand to nothing.
 				if (n < params.size () )
-				{
-					const MacroParam & param= params [n];
-					for (size_t i= 0; i < param.size ();
-						++i)
-					{
-						r.push_back (param [i] );
-					}
-				}
+					substparam (r, params [n] );
 			}
 		}
 	}
 	return r;
 }
 
+
 } // namespace
+
 
 bool Asm::In::gotoENDM ()
 {
@@ -5043,24 +5227,41 @@ bool Asm::In::gotoENDM ()
 	return true;
 }
 
-// class MacroFrame: create the MacroLevel and store some state info
-// and restore things on destruction.
 
-class Asm::In::MacroFrame {
+// Macro expansion control classes: create the MacroLevel, store some
+// state info and restore things on destruction and do parameter
+// substitutions.
+
+
+class MacroFrameBase {
 public:
-	MacroFrame (Asm::In & asmin);
-	~MacroFrame ();
+	MacroFrameBase (Asm::In & asmin_n,
+		const MacroBase & macro_n, MacroParamList & params_n);
+	virtual ~MacroFrameBase ();
 	size_t getexpline () const;
-private:
+	virtual void shift ()= 0;
+	virtual Tokenizer substparams (Tokenizer & tz);
+	Tokenizer substparentparams (Tokenizer & tz);
+protected:
 	Asm::In & asmin;
+	void do_shift ();
+	void parentshift ();
+private:
 	const size_t expandline;
 	const size_t previflevel;
+	const MacroBase & macro;
+	MacroParamList & params;
+	MacroFrameBase * pprevmframe;
 };
 
-Asm::In::MacroFrame::MacroFrame (Asm::In & asmin) :
-	asmin (asmin),
+MacroFrameBase::MacroFrameBase (Asm::In & asmin_n,
+		const MacroBase & macro_n, MacroParamList & params_n) :
+	asmin (asmin_n),
 	expandline (asmin.getline () ),
-	previflevel (asmin.iflevel)
+	previflevel (asmin.iflevel),
+	macro (macro_n),
+	params (params_n),
+	pprevmframe (asmin.getmframe () )
 {
 	MacroLevel * pproc= new MacroLevel (asmin);
 	asmin.localstack.push (pproc);
@@ -5068,9 +5269,11 @@ Asm::In::MacroFrame::MacroFrame (Asm::In & asmin) :
 	// Ensure that an IF opened before is not closed
 	// inside the macro expansion.
 	asmin.iflevel= 0;
+
+	asmin.setmframe (this);
 }
 
-Asm::In::MacroFrame::~MacroFrame ()
+MacroFrameBase::~MacroFrameBase ()
 {
 	// Clear the local frame, including unclosed PROCs and autolocals.
 	while (dynamic_cast <MacroLevel *> (asmin.localstack.top () ) == NULL)
@@ -5079,12 +5282,127 @@ Asm::In::MacroFrame::~MacroFrame ()
 
 	// IF whitout ENDIF inside a macro are valid.
 	asmin.iflevel= previflevel;
+
+	asmin.setmframe (pprevmframe);
 }
 
-size_t Asm::In::MacroFrame::getexpline () const
+
+size_t MacroFrameBase::getexpline () const
 {
 	return expandline;
 }
+
+void MacroFrameBase::do_shift ()
+{
+	params.erase (params.begin () );
+}
+
+void MacroFrameBase::parentshift ()
+{
+	if (pprevmframe)
+		pprevmframe->shift ();
+	else
+		throw ShiftOutsideMacro;
+}
+
+Tokenizer MacroFrameBase::substparams (Tokenizer & tz)
+{
+	return substmacroparams (macro, tz, params);
+}
+
+Tokenizer MacroFrameBase::substparentparams (Tokenizer & tz)
+{
+	if (pprevmframe)
+		return pprevmframe->substparams (tz);
+	else
+		return tz;
+}
+
+
+class MacroFrameChild : public MacroFrameBase {
+public:
+	MacroFrameChild (Asm::In & asmin_n,
+		const MacroBase & macro_n, MacroParamList & params_n);
+	void shift ();
+	Tokenizer substparams (Tokenizer & tz);
+};
+
+MacroFrameChild::MacroFrameChild (Asm::In & asmin_n,
+		const MacroBase & macro_n, MacroParamList & params_n) :
+	MacroFrameBase (asmin_n, macro_n, params_n)
+{
+}
+
+void MacroFrameChild::shift ()
+{
+	parentshift ();
+}
+
+Tokenizer MacroFrameChild::substparams (Tokenizer & tz)
+{
+	//cerr << "Subst parent" << endl;
+	Tokenizer tzaux (substparentparams (tz) );
+
+	//cerr << "Subst this" << endl;
+	return MacroFrameBase::substparams (tzaux);
+}
+
+
+class MacroFrameMacro : public MacroFrameBase {
+public:
+	MacroFrameMacro (Asm::In & asmin_n,
+		const Macro & macro_n, MacroParamList & params_n);
+	void shift ();
+	Tokenizer substparams (Tokenizer & tz);
+};
+
+MacroFrameMacro::MacroFrameMacro (Asm::In & asmin_n,
+		const Macro & macro_n, MacroParamList & params_n) :
+	MacroFrameBase (asmin_n, macro_n, params_n)
+{
+}
+
+void MacroFrameMacro::shift ()
+{
+	do_shift ();
+}
+
+Tokenizer MacroFrameMacro::substparams (Tokenizer & tz)
+{
+	// First do the parameter substitution.
+	Tokenizer tzaux (MacroFrameBase::substparams (tz) );
+
+	// Then look for ##.
+	Tokenizer tzr;
+	Token tok;
+	TypeToken tt;
+	Token last (TypeUndef);
+	while ( (tt= (tok= tzaux.gettoken () ).type () ) != TypeEndLine)
+	{
+		if (tt == TypeSharpSharp)
+		{
+			if (last.type () == TypeUndef)
+				throw InvalidSharpSharp;
+			std::string str (last.str () );
+			tok= tzaux.gettoken ();
+			if (tok.type () == TypeEndLine)
+				throw InvalidSharpSharp;
+			str+= tok.str ();
+			last= Token (TypeIdentifier, str);
+		}
+		else
+		{
+			if (last.type () != TypeUndef)
+				tzr.push_back (last);
+			last= tok;
+		}
+	}
+	if (last.type () != TypeUndef)
+		tzr.push_back (last);
+	return tzr;
+}
+
+
 
 void Asm::In::expandMACRO (const std::string & name,
 	Macro macro, Tokenizer & tz)
@@ -5106,33 +5424,41 @@ void Asm::In::expandMACRO (const std::string & name,
 	}
 
 	// Set the local frame.
-	MacroFrame mframe (* this);
+	MacroFrameMacro mframe (* this, macro, params);
 
 	// Do the expansion,
 	try
 	{
-		for (setline (macro.getline () ); nextline (); )
+		bool noexit= true;
+		for (setline (macro.getline () ); noexit && nextline (); )
 		{
 			Tokenizer & tz (getcurrentline () );
+			* pout << tz << endl;
 
 			Token tok= tz.gettoken ();
 			TypeToken tt= tok.type ();
-			if (tt == TypeENDM || tt == TypeEXITM)
+			switch (tt)
 			{
+			case TypeENDM:
+			case TypeEXITM:
+				noexit= false;
 				* pout << "\t\t" << tok.str () << endl;
 				break;
+			case Type_SHIFT:
+				checkendline (tz);
+				mframe.shift ();
+				break;
+			default:
+				tz.ungettoken ();
+
+				Tokenizer tzsubst (mframe.substparams (tz) );
+				//* pout << tzsubst << endl;
+
+				parseline (tzsubst);
 			}
-			tz.ungettoken ();
-
-			Tokenizer tzsubst
-				(substmacroparams (macro, tz, params) );
-
-			//* pout << tzsubst << endl;
-
-			parseline (tzsubst);
 		}
 		if (passeof () )
-			throw "Unexpected unclosed MACRO";
+			throw MACROLostENDM;
 	}
 	catch (...)
 	{
@@ -5151,119 +5477,191 @@ void Asm::In::parseREPT (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
 	const address numrep= parseexpr (true, tok, tz);
-	checkendline (tz);
+
+	// Adding new option for counter variable.
+	//checkendline (tz);
+
+	std::string varcounter;
+	address valuecounter= 0;
+	address step= 1;
+
+	tok= tz.gettoken ();
+	if (tok.type () != TypeEndLine)
+	{
+		checktoken (TypeComma, tok);
+		tok= tz.gettoken ();
+		checktoken (TypeIdentifier, tok);
+		varcounter= tok.str ();
+
+		tok= tz.gettoken ();
+		if (tok.type () != TypeEndLine)
+		{
+			checktoken (TypeComma, tok);
+			tok= tz.gettoken ();
+			valuecounter= parseexpr (true, tok, tz);
+			tok= tz.gettoken ();
+			if (tok.type () != TypeEndLine)
+			{
+				checktoken (TypeComma, tok);
+				tok= tz.gettoken ();
+				step= parseexpr (true, tok, tz);
+				checkendline (tz);
+			}
+		}
+
+		if (isautolocalname (varcounter) )
+			throw InvalidInAutolocal;
+	}
 
 	* pout << "\t\tREPT " << numrep << endl;
 
 	if (numrep == 0)
 	{
 		if (! gotoENDM () )
-			throw "REPT without ENDM";
+			throw REPTwithoutENDM;
 		return;
 	}
-	
+
 	// Set the local frame.
-	MacroFrame mframe (* this);
+	MacroRept macro;
+	MacroParamList params;
+	MacroFrameChild mframe (* this, macro, params);
+
+	// Create counter local var.
+	if (! varcounter.empty () )
+	{
+		localstack.top ()->add (varcounter);
+		setdefl (varcounter, valuecounter);
+	}
 
 	const address lastrep= numrep - 1;
+	bool endrep= false;
 	for (address i= 0; i < numrep; ++i)
 	{
-		bool exited= false;
-		for (setline (mframe.getexpline () ); nextline (); )
+		bool noendblock= true;
+		for (setline (mframe.getexpline () );
+			noendblock && nextline (); )
 		{
 			Tokenizer & tz (getcurrentline () );
 
 			tok= tz.gettoken ();
 			TypeToken tt= tok.type ();
-			if (tt == TypeENDM)
+			switch (tt)
 			{
+			case TypeENDM:
 				if (i == lastrep)
+				{
 					* pout << "\t\tENDM" << endl;
+					endrep= true;
+				}
+				noendblock= false;
 				break;
-			}
-			if (tt == TypeEXITM)
-			{
+			case TypeEXITM:
 				if (! gotoENDM () )
-					throw "REPT without ENDM";
+					throw REPTwithoutENDM;
 				* pout << "\t\tEXITM" << endl;
-				exited= true;
+				noendblock= false;
+				endrep= true;
 				break;
+			case Type_SHIFT:
+				checkendline (tz);
+				mframe.shift ();
+				break;
+			default:
+				tz.ungettoken ();
+
+				Tokenizer tzsubst (mframe.substparams (tz) );
+				//* pout << tzsubst << endl;
+
+				parseline (tzsubst);
 			}
-			tz.ungettoken ();
-			* pout << tz << endl;
-			parseline (tz);
 		}
 		if (passeof () )
 		{
 			setline (mframe.getexpline () );
-			throw "REPT without ENDM";
+			throw REPTwithoutENDM;
 		}
-		if (exited)
+		if (endrep)
 			break;
+		if (! varcounter.empty () )
+		{
+			valuecounter+= step;
+			setdefl (varcounter, valuecounter);
+		}
 	}
 }
 
 void Asm::In::parseIRP (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	if (tok.type () != TypeIdentifier)
-		throw "IRP param not valid: " + tok.str ();
+	checktoken (TypeIdentifier, tok);
 	const std::string arg= tok.str ();
+
 	MacroIrp macroirp (arg);
 
-	tok= tz.gettoken ();
-	if (tok.type () != TypeComma)
-		throw "Comma expected after IRP param, found: " + tok.str ();
+	expectcomma (tz);
 	MacroParamList params;
 	getmacroparams (params, tz);
 	checkendline (tz); // Redundant, for debugging.
 	if (params.empty () )
-		throw "IRP without parameters";
+		throw IRPWithoutParameters;
 
 	* pout << "\t\tIRP" << endl;
 
 	// Set the local frame.
-	MacroFrame mframe (* this);
-
 	MacroParamList actualparam (1);
+	MacroFrameChild mframe (* this, macroirp, actualparam);
+
 	const size_t irpnlast= params.size () - 1;
+	bool endirp= false;
 	for (size_t irpn= 0; irpn < params.size (); ++irpn)
 	{
-		bool exited= false;
+		bool noendblock= true;
 		actualparam [0]= params [irpn];
-		for (setline (mframe.getexpline () ); nextline (); )
+		for (setline (mframe.getexpline () );
+			noendblock && nextline (); )
 		{
 			Tokenizer & tz (getcurrentline () );
 
 			tok= tz.gettoken ();
 			TypeToken tt= tok.type ();
-			if (tt == TypeENDM)
+			switch (tt)
 			{
+			case TypeENDM:
 				if (irpn == irpnlast)
+				{
 					* pout << "\t\tENDM" << endl;
+					endirp= true;
+				}
+				noendblock= false;
 				break;
-			}
-			if (tt == TypeEXITM)
-			{
+			case TypeEXITM:
 				if (! gotoENDM () )
-					throw "IRP without ENDM";
+					throw IRPwithoutENDM;
 				* pout << "\t\tEXITM" << endl;
-				exited= true;
+				noendblock= false;
+				endirp= true;
 				break;
+			case Type_SHIFT:
+				checkendline (tz);
+				mframe.shift ();
+				break;
+			default:
+				tz.ungettoken ();
+
+				Tokenizer tzsubst (mframe.substparams (tz) );
+				* pout << tzsubst << endl;
+
+				parseline (tzsubst);
 			}
-			tz.ungettoken ();
-			Tokenizer tzsubst (substmacroparams
-				(macroirp, tz, actualparam) );
-			* pout << tzsubst << endl;
-			parseline (tzsubst);
 		}
 
 		if (passeof () )
 		{
 			setline (mframe.getexpline () );
-			throw runtime_error ("IRP without ENDM");
+			throw IRPwithoutENDM;
 		}
-		if (exited)
+		if (endirp)
 			break;
 	}
 }
@@ -5325,16 +5723,16 @@ void Asm::In::emitplus3dos (std::ostream & out)
 	}
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
-void Asm::In::emittap (std::ostream & out, const std::string & filename)
+void Asm::In::emittap (std::ostream & out)
 {
 	message_emit ("TAP");
 
 	// Pepare data needed.
 	address codesize= getcodesize ();
-	tap::CodeHeader headcodeblock (minused, codesize, filename);
+	tap::CodeHeader headcodeblock (minused, codesize, headername);
 	tap::CodeBlock codeblock (codesize, mem + minused);
 
 	// Write the file.
@@ -5342,15 +5740,15 @@ void Asm::In::emittap (std::ostream & out, const std::string & filename)
 	codeblock.write (out);
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
-void Asm::In::writetzxcode (std::ostream & out, const std::string & filename)
+void Asm::In::writetzxcode (std::ostream & out)
 {
 	// Preapare data needed.
 
 	address codesize= getcodesize ();
-	tap::CodeHeader block1 (minused, codesize, filename);
+	tap::CodeHeader block1 (minused, codesize, headername);
 	tap::CodeBlock block2 (codesize, mem + minused);
 
 	// Write the data.
@@ -5361,24 +5759,24 @@ void Asm::In::writetzxcode (std::ostream & out, const std::string & filename)
 	tzx::writestandardblockhead (out);
 	block2.write (out);
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
-void Asm::In::emittzx (std::ostream & out, const std::string & filename)
+void Asm::In::emittzx (std::ostream & out)
 {
 	message_emit ("TZX");
 
 	tzx::writefilehead (out);
 
-	writetzxcode (out, filename);
+	writetzxcode (out);
 }
 
-void Asm::In::writecdtcode (std::ostream & out, const std::string & filename)
+void Asm::In::writecdtcode (std::ostream & out)
 {
 	const address codesize= getcodesize ();
 	const address entry= hasentrypoint ? entrypoint : 0;
 
-	cpc::Header head (filename);
+	cpc::Header head (headername);
 	head.settype (cpc::Header::Binary);
 	head.firstblock (true);
 	head.lastblock (false);
@@ -5454,16 +5852,16 @@ void Asm::In::writecdtcode (std::ostream & out, const std::string & filename)
 	}
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
-void Asm::In::emitcdt (std::ostream & out, const std::string & filename)
+void Asm::In::emitcdt (std::ostream & out)
 {
 	message_emit ("CDT");
 
 	tzx::writefilehead (out);
 
-	writecdtcode (out, filename);
+	writecdtcode (out);
 }
 
 std::string Asm::In::cpcbasicloader ()
@@ -5494,7 +5892,7 @@ std::string Asm::In::cpcbasicloader ()
 	return basic;
 }
 
-void Asm::In::emitcdtbas (std::ostream & out, const std::string & filename)
+void Asm::In::emitcdtbas (std::ostream & out)
 {
 	message_emit ("CDT");
 
@@ -5543,7 +5941,7 @@ void Asm::In::emitcdtbas (std::ostream & out, const std::string & filename)
 	out.put (0xFF);
 	out.put (0xFF);
 
-	writecdtcode (out, filename);
+	writecdtcode (out);
 }
 
 
@@ -5576,7 +5974,7 @@ std::string Asm::In::spectrumbasicloader ()
 	return basic;
 }
 
-void Asm::In::emittapbas (std::ostream & out, const std::string & filename)
+void Asm::In::emittapbas (std::ostream & out)
 {
 	if (debugtype != NoDebug)
 		* pout << "Emiting TAP basic loader" << endl;
@@ -5592,10 +5990,10 @@ void Asm::In::emittapbas (std::ostream & out, const std::string & filename)
 	basicheadblock.write (out);
 	basicblock.write (out);
 
-	emittap (out, filename);
+	emittap (out);
 }
 
-void Asm::In::emittzxbas (std::ostream & out, const std::string & filename)
+void Asm::In::emittzxbas (std::ostream & out)
 {
 	if (debugtype != NoDebug)
 		* pout << "Emiting TZX with basic loader" << endl;
@@ -5616,7 +6014,7 @@ void Asm::In::emittzxbas (std::ostream & out, const std::string & filename)
 	tzx::writestandardblockhead (out);
 	basicblock.write (out);
 
-	writetzxcode (out, filename);
+	writetzxcode (out);
 }
 
 void Asm::In::emithex (std::ostream & out)
@@ -5643,16 +6041,16 @@ void Asm::In::emithex (std::ostream & out)
 	out << ":00000001FF\r\n";
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
-void Asm::In::emitamsdos (std::ostream & out, const std::string & filename)
+void Asm::In::emitamsdos (std::ostream & out)
 {
 	message_emit ("Amsdos");
 
 	address codesize= getcodesize ();
 
-	cpc::AmsdosHeader head (filename);
+	cpc::AmsdosHeader head (headername);
 	head.setlength (codesize);
 	head.setloadaddress (minused);
 	if (hasentrypoint)
@@ -5664,7 +6062,7 @@ void Asm::In::emitamsdos (std::ostream & out, const std::string & filename)
 	writebincode (out);
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
 void Asm::In::emitmsx (std::ostream & out)
@@ -5697,9 +6095,6 @@ void Asm::In::emitprl (std::ostream & out)
 {
 	message_emit ("PRL");
 
-	static const std::string
-		nosync ("PRL genration failed: out of sync");
-
 	// Assembly with 1 page offset to obtain the information needed
 	// to create the prl relocation table.
 	In asmoff (* this);
@@ -5707,9 +6102,9 @@ void Asm::In::emitprl (std::ostream & out)
 	asmoff.processfile ();
 
 	if (minused - base != asmoff.minused - asmoff.base)
-		throw nosync;
+		throw OutOfSyncPRL;
 	if (maxused - base != asmoff.maxused - asmoff.base)
-		throw nosync;
+		throw OutOfSyncPRL;
 	address len= getcodesize ();
 	address off= asmoff.base - base;
 
@@ -5721,7 +6116,8 @@ void Asm::In::emitprl (std::ostream & out)
 	out.write (reinterpret_cast <char *> (prlhead), sizeof (prlhead) );
 	address reloclen= (len + 7) / 8;
 	byte * reloc= new byte [reloclen];
-	memset (reloc, 0, reloclen);
+	//memset (reloc, 0, reloclen);
+	fill (reloc, reloc + reloclen, byte (0) );
 
 	// Build relocation bitmap.
 	for (address i= minused; i <= maxused; ++i)
@@ -5736,7 +6132,7 @@ void Asm::In::emitprl (std::ostream & out)
 					", b= " << hex2 (b) <<
 					", b2= " << hex2 (b2) <<
 					endl;
-				throw nosync;
+				throw OutOfSyncPRL;
 			}
 			address pos= i - minused;
 			static const byte mask [8]= {
@@ -5754,7 +6150,7 @@ void Asm::In::emitprl (std::ostream & out)
 	out.write (reinterpret_cast <char *> (reloc), reloclen);
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
 namespace {
@@ -5835,7 +6231,7 @@ void Asm::In::emitcmd (std::ostream & out)
 	writebincode (out);
 
 	if (! out)
-		throw "Error writing";
+		throw ErrorOutput;
 }
 
 
@@ -5890,6 +6286,11 @@ Asm::Asm () :
 Asm::~Asm ()
 {
 	delete pin;
+}
+
+void Asm::setheadername (const std::string & headername_n)
+{
+	pin->setheadername (headername_n);
 }
 
 void Asm::verbose ()
@@ -5967,34 +6368,34 @@ void Asm::emitplus3dos (std::ostream & out)
 	pin->emitplus3dos (out);
 }
 
-void Asm::emittap (std::ostream & out, const std::string & filename)
+void Asm::emittap (std::ostream & out)
 {
-	pin->emittap (out, filename);
+	pin->emittap (out);
 }
 
-void Asm::emittzx (std::ostream & out, const std::string & filename)
+void Asm::emittzx (std::ostream & out)
 {
-	pin->emittzx (out, filename);
+	pin->emittzx (out);
 }
 
-void Asm::emitcdt (std::ostream & out, const std::string & filename)
+void Asm::emitcdt (std::ostream & out)
 {
-	pin->emitcdt (out, filename);
+	pin->emitcdt (out);
 }
 
-void Asm::emitcdtbas (std::ostream & out, const std::string & filename)
+void Asm::emitcdtbas (std::ostream & out)
 {
-	pin->emitcdtbas (out, filename);
+	pin->emitcdtbas (out);
 }
 
-void Asm::emittapbas (std::ostream & out, const std::string & filename)
+void Asm::emittapbas (std::ostream & out)
 {
-	pin->emittapbas (out, filename);
+	pin->emittapbas (out);
 }
 
-void Asm::emittzxbas (std::ostream & out, const std::string & filename)
+void Asm::emittzxbas (std::ostream & out)
 {
-	pin->emittzxbas (out, filename);
+	pin->emittzxbas (out);
 }
 
 void Asm::emithex (std::ostream & out)
@@ -6002,9 +6403,9 @@ void Asm::emithex (std::ostream & out)
 	pin->emithex (out);
 }
 
-void Asm::emitamsdos (std::ostream & out, const std::string & filename)
+void Asm::emitamsdos (std::ostream & out)
 {
-	pin->emitamsdos (out, filename);
+	pin->emitamsdos (out);
 }
 
 void Asm::emitprl (std::ostream & out)

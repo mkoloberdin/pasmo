@@ -23,7 +23,8 @@
 	.asm de ejemplo incluidos en el paquete de los fuentes.
 
 	Para ensamblar:
-		pasmo [opciones] fichero.asm fichero.bin [fichero.simbolos]
+		pasmo [ opciones ] fichero.asm fichero.bin
+			[ fichero.simbolos [fichero.publicos] ]
 
 	Opciones:
 
@@ -40,6 +41,9 @@
 		-I         -->	Añadir directorio a la lista de
 				directorios en los que se buscarán
 				ficheros para INCLUDE e INCBIN.
+
+		--bin      -->	Generar el fichero objeto en binario
+				puro sin cabecera.
 
 		--hex      -->	Generar el fichero objeto en formato
 				Intel HEX.
@@ -114,8 +118,7 @@
 				comience por -.
 
 
-	Si ninguna opción indica lo contrario, el formato del código objeto
-generado es binario sin cabecera.
+	Si no hay ninguna opción de formato de objeto se asume --bin.
 
 	La información de depuración va a la salida estándar, los errores
 a la salida de error.
@@ -147,7 +150,8 @@ Comentarios y críticas a: julian.notfound@gmail.com
 	files included with the souce package.
 
 	To assemble:
-		pasmo [options] file.asm file.bin [file.symbol]
+		pasmo [ options ] file.asm file.bin
+			[ file.symbol [ file.publics ] ]
 
 	Options:
 
@@ -161,6 +165,9 @@ Comentarios y críticas a: julian.notfound@gmail.com
 
 		-I         -->	Add directory to the list for
 				searching files in INCLUDE and INCBIN.
+
+		--bin      -->	Generate the object file in pure binary
+				format without headers.
 
 		--hex      -->	Generate the object file in Intel HEX
 				format.
@@ -230,8 +237,7 @@ Comentarios y críticas a: julian.notfound@gmail.com
 		--86       -->	Generate 8086 code.
 
 
-	If no options specify another, the object code format is binary
-without headers.
+	If no code generation options are specified --bin is assumed.
 
 	Debug info goes to standard output, error messages to error
 output.

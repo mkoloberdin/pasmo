@@ -46,4 +46,26 @@ n	defl n + 2
 	hola
 	endm
 
+;	New syntax.
+
+counter	equ 1234h
+
+	; With counter (initial value 0 and step 1 assumed):
+	rept 3, counter
+	db counter
+	endm
+
+	; With counter and initial value (step 1 assumed):
+	rept 3, counter, 5
+	db counter
+	endm
+
+	; With counter, initial value and step:
+	rept 3, counter, 7, -1
+	db counter
+	endm
+
+	; Testing that counter was local:
+	defw counter
+
 	end

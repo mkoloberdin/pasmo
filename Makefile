@@ -1,4 +1,5 @@
 # Makefile for pasmo
+# Revision 20-dec-2004
 
 CPP=g++
 CPPFLAGS=-W -Wall

@@ -1,13 +1,15 @@
 // cpc.cpp
-// Revision 7-dec-2004
+// Revision 13-dec-2004
 
 
 #include "cpc.h"
 
+#include <algorithm>
 #include <stdexcept>
 
 #include <stdlib.h>
 
+using std::fill;
 using std::logic_error;
 
 
@@ -55,7 +57,8 @@ cpc::Header::Header (const std::string & filename)
 
 void cpc::Header::clear ()
 {
-	memset (data, 0, headsize);
+	//memset (data, 0, headsize);
+	fill (data, data + headsize, byte (0) );
 }
 
 void cpc::Header::setfilename (const std::string & filename)
@@ -154,7 +157,8 @@ cpc::AmsdosHeader::AmsdosHeader (const std::string & filename)
 
 void cpc::AmsdosHeader::clear ()
 {
-	memset (amsdos, 0, headsize);
+	//memset (amsdos, 0, headsize);
+	fill (amsdos, amsdos + headsize, byte (0) );
 	amsdos [0x12]= 2; // File type: binary.
 }
 

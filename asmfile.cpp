@@ -1,5 +1,5 @@
 // asmfile.cpp
-// Revision 7-dec-2004
+// Revision 21-dec-2004
 
 #include "asmfile.h"
 
@@ -13,6 +13,22 @@ using std::runtime_error;
 #define ASSERT assert
 
 namespace {
+
+
+class FileNotFound : public runtime_error {
+public:
+	FileNotFound (const std::string & filename) :
+		runtime_error ("File '" + filename + "' not found")
+	{ }
+};
+
+class InvalidInclude : public runtime_error {
+public:
+	InvalidInclude (const Token & tok) :
+		runtime_error ("Unexpected " + tok.str () +
+			" after INCLUDE file name")
+	{ }
+};
 
 
 class FileLine {
@@ -325,7 +341,7 @@ void AsmFile::In::openis (std::ifstream & is, const std::string & filename,
 		if (is.is_open () )
 			return;
 	}
-	throw "File \"" + filename + "\" not found";
+	throw FileNotFound (filename);
 }
 
 void AsmFile::In::pushline (size_t filenum, size_t linenum)
@@ -392,27 +408,6 @@ void AsmFile::In::loadfile (const std::string & filename, bool nocase,
 		{
 			Tokenizer tz (line, nocase);
 			Token tok= tz.gettoken ();
-			#if 0
-			if (tok.type () == TypeINCLUDE)
-			{
-				std::string includefile= tz.getincludefile ();
-				tok= tz.gettoken ();
-				if (tok.type () != TypeEndLine)
-				{
-					throw runtime_error (
-						"Unexpected " + tok.str () +
-						" after INCLUDE file name");
-				}
-				loadfile (includefile, nocase,
-					outverb, outerr);
-			}
-			else
-			{
-				//pushline (line, tz, linenum, filenum);
-				getfile (filenum).pushline (line, tz);
-				pushline (filenum, linenum);
-			}
-			#endif
 			getfile (filenum).pushline (line, tz, realnum);
 			pushline (filenum, linenum);
 			if (tok.type () == TypeINCLUDE)
@@ -420,11 +415,8 @@ void AsmFile::In::loadfile (const std::string & filename, bool nocase,
 				std::string includefile= tz.getincludefile ();
 				tok= tz.gettoken ();
 				if (tok.type () != TypeEndLine)
-				{
-					throw runtime_error (
-						"Unexpected " + tok.str () +
-						" after INCLUDE file name");
-				}
+					throw InvalidInclude (tok);
+
 				loadfile (includefile, nocase,
 					outverb, outerr);
 

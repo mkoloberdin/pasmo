@@ -2,7 +2,7 @@
 #define INCLUDE_ASMFILE_H
 
 // asmfile.h
-// Revision 7-dec-2004
+// Revision 12-dec-2004
 
 #include "token.h"
 
@@ -18,6 +18,7 @@ public:
 	void addincludedir (const std::string & dirname);
 	void loadfile (const std::string & filename, bool nocase,
 		std::ostream & outverb, std::ostream& outerr);
+	size_t getline () const;
 protected:
 	void openis (std::ifstream & is, const std::string & filename,
 		std::ios::openmode mode) const;
@@ -25,7 +26,6 @@ protected:
 	void showcurrentlineinfo (std::ostream & os) const;
 	bool getvalidline ();
 	bool passeof () const;
-	size_t getline () const;
 	Tokenizer & getcurrentline ();
 	const std::string & getcurrenttext () const;
 

@@ -1,10 +1,14 @@
 // spectrum.cpp
-// Revision 7-dec-2004
+// Revision 13-dec-2004
 
 
 #include "spectrum.h"
 
 #include <sstream>
+#include <algorithm>
+
+using std::fill;
+using std::copy;
 
 
 spectrum::Plus3Head::Plus3Head ()
@@ -15,8 +19,10 @@ spectrum::Plus3Head::Plus3Head ()
 		1,    // Issue number.
 		0,    // Version number.
 	};
-	memset (plus3, 0, headsize);
-	memcpy (plus3, ident, sizeof (ident) );
+	//memset (plus3, 0, headsize);
+	fill (plus3, plus3 + headsize, byte (0) );
+	//memcpy (plus3, ident, sizeof (ident) );
+	copy (ident, ident + sizeof (ident), plus3);
 
 	plus3 [15]= 3; // Type: code.
 
@@ -61,14 +67,14 @@ void spectrum::Plus3Head::write (std::ostream & out)
 // Spectrum Basic generation.
 
 
-extern const std::string spectrum::tokNumPrefix (1, '\x0E');
-extern const std::string spectrum::tokEndLine   (1, '\x0D');
-extern const std::string spectrum::tokCODE      (1, '\xAF');
-extern const std::string spectrum::tokUSR       (1, '\xC0');
-extern const std::string spectrum::tokLOAD      (1, '\xEF');
-extern const std::string spectrum::tokPOKE      (1, '\xF4');
-extern const std::string spectrum::tokRANDOMIZE (1, '\xF9');
-extern const std::string spectrum::tokCLEAR     (1, '\xFD');
+const std::string spectrum::tokNumPrefix (1, '\x0E');
+const std::string spectrum::tokEndLine   (1, '\x0D');
+const std::string spectrum::tokCODE      (1, '\xAF');
+const std::string spectrum::tokUSR       (1, '\xC0');
+const std::string spectrum::tokLOAD      (1, '\xEF');
+const std::string spectrum::tokPOKE      (1, '\xF4');
+const std::string spectrum::tokRANDOMIZE (1, '\xF9');
+const std::string spectrum::tokCLEAR     (1, '\xFD');
 
 std::string spectrum::number (address n)
 {

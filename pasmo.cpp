@@ -1,5 +1,5 @@
 // pasmo.cpp
-// Revision 6-dec-2004
+// Revision 21-dec-2004
 
 #include "asm.h"
 
@@ -13,119 +13,200 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
+
 namespace {
 
-const std::string pasmoversion ("0.5.0");
+
+using std::string;
+using std::vector;
+using std::runtime_error;
+
+const string pasmoversion ("0.5.1");
+
 
 class Usage { };
 
-enum ObjectFormat {
-	ObjectRaw, ObjectHex, ObjectPrl,
-	ObjectCmd,
-	ObjectPlus3Dos,
-	ObjectTap, ObjectTapBas,
-	ObjectTzx, ObjectTzxBas,
-	ObjectCdt, ObjectCdtBas,
-	ObjectAmsdos,
-	ObjectMsx
+class NeedArgument : public runtime_error {
+public:
+	NeedArgument (const string & option) :
+		runtime_error ("Option " + option + " requires argument")
+	{ }
 };
 
-std::ostream * perr= & std::cerr;
+class InvalidOption : public runtime_error {
+public:
+	InvalidOption (const string & option) :
+		runtime_error ("Invalid option: " + option)
+	{ }
+};
 
-int doit (int argc, char * * argv)
-{
-	using std::string;
+runtime_error CreateObjectError ("Error creating object file");
+runtime_error SymbolFileError ("Error creating symbols file");
+runtime_error PublicFileError ("Error creating public symbols file");
 
-	//Asm a;
 
-	// Default values for options.
+std::ostream * perr= & cerr;
 
-	ObjectFormat format= ObjectRaw;
-	bool verbose= false;
-	bool emitpublic= false;
-	int argpos= 1;
+
+const string opt1 ("-1");
+const string opt8 ("-8");
+const string optd ("-d");
+const string optv ("-v");
+const string optB ("-B");
+const string optE ("-E");
+const string optI ("-I");
+
+const string opt86        ("--86");
+const string optalocal    ("--alocal");
+const string optamsdos    ("--amsdos");
+const string optbin       ("--bin");
+const string optbracket   ("--bracket");
+const string optcdt       ("--cdt");
+const string optcdtbas    ("--cdtbas");
+const string optcmd       ("--cmd");
+const string optequ       ("--equ");
+const string opterr       ("--err");
+const string opthex       ("--hex");
+const string optmsx       ("--msx");
+const string optname      ("--name");
+const string optnocase    ("--nocase");
+const string optplus3dos  ("--plus3dos");
+const string optprl       ("--prl");
+const string optpublic    ("--public");
+const string opttap       ("--tap");
+const string opttapbas    ("--tapbas");
+const string opttzx       ("--tzx");
+const string opttzxbas    ("--tzxbas");
+const string optw8080     ("--w8080");
+
+
+class Options {
+public:
+	Options (int argc, char * * argv);
+
+	typedef void (Asm::* emitfunc_t) (std::ostream &);
+
+	emitfunc_t getemit () const { return emitfunc; }
+	bool redirerr () const { return redirecterr; }
+	bool publiconly () const { return emitpublic; }
+	string getfilein () const { return filein; }
+	string getfileout () const { return fileout; }
+	string getfilesymbol () const { return filesymbol; }
+	string getfilepublic () const;
+	string getheadername () const { return headername; }
+	void apply (Asm & assembler) const;
+private:
+	emitfunc_t emitfunc;
+	static const emitfunc_t emitdefault;
+
+	bool verbose;
+	bool emitpublic;
+	Asm::DebugType debugtype;
+	bool redirecterr;
+	bool nocase;
+	bool autolocal;
+	bool bracketonly;
+	bool warn8080;
+	bool mode86;
+
+	vector <string> includedir;
+	vector <string> labelpredef;
+
+	string filein;
+	string fileout;
+	string filesymbol;
+	string filepublic;
 	string headername;
-	Asm::DebugType debugtype= Asm::NoDebug;
-	bool redirecterr= false;
-	bool nocase= false;
-	bool autolocal= false;
-	bool bracketonly= false;
-	bool warn8080= false;
-	bool mode86= false;
-	std::vector <string> includedir;
-	std::vector <string> labelpredef;
+};
 
-	// Process command line options.
 
-	for ( ; argpos < argc; ++argpos)
+const Options::emitfunc_t Options::emitdefault (& Asm::emitobject);
+
+
+Options::Options (int argc, char * * argv) :
+	emitfunc (emitdefault),
+	verbose (false),
+	emitpublic (false),
+	debugtype (Asm::NoDebug),
+	redirecterr (false),
+	nocase (false),
+	autolocal (false),
+	bracketonly (false),
+	warn8080 (false),
+	mode86 (false)
+{
+	int argpos;
+	for (argpos= 1; argpos < argc; ++argpos)
 	{
 		const string arg (argv [argpos] );
-		if (arg == "--hex")
-			format= ObjectHex;
-		else if (arg == "--prl")
-			format= ObjectPrl;
-		else if (arg == "--cmd")
-			format= ObjectCmd;
-		else if (arg == "--plus3dos")
-			format= ObjectPlus3Dos;
-		else if (arg == "--tap")
-			format= ObjectTap;
-		else if (arg == "--tzx")
-			format= ObjectTzx;
-		else if (arg == "--cdt")
-			format= ObjectCdt;
-		else if (arg == "--tapbas")
-			format= ObjectTapBas;
-		else if (arg == "--tzxbas")
-			format= ObjectTzxBas;
-		else if (arg == "--cdtbas")
-			format= ObjectCdtBas;
-		else if (arg == "--amsdos")
-			format= ObjectAmsdos;
-		else if (arg == "--msx")
-			format= ObjectMsx;
-		else if (arg == "--public")
+		if (arg == optbin)
+			emitfunc= & Asm::emitobject;
+		else if (arg == opthex)
+			emitfunc= & Asm::emithex;
+		else if (arg == optprl)
+			emitfunc= & Asm::emitprl;
+		else if (arg == optcmd)
+			emitfunc= & Asm::emitcmd;
+		else if (arg == optplus3dos)
+			emitfunc= & Asm::emitplus3dos;
+		else if (arg == opttap)
+			emitfunc= & Asm::emittap;
+		else if (arg == opttzx)
+			emitfunc= & Asm::emittzx;
+		else if (arg == optcdt)
+			emitfunc= & Asm::emitcdt;
+		else if (arg == opttapbas)
+			emitfunc= & Asm::emittapbas;
+		else if (arg == opttzxbas)
+			emitfunc= & Asm::emittzxbas;
+		else if (arg == optcdtbas)
+			emitfunc= & Asm::emitcdtbas;
+		else if (arg == optamsdos)
+			emitfunc= & Asm::emitamsdos;
+		else if (arg == optmsx)
+			emitfunc= & Asm::emitmsx;
+		else if (arg == optpublic)
 			emitpublic= true;
-		else if (arg == "--name")
+		else if (arg == optname)
 		{
 			++argpos;
 			if (argpos >= argc)
-				throw "Option --name needs an argument";
+				throw NeedArgument (optname);
 			headername= argv [argpos];
 		}
-		else if (arg == "-v")
+		else if (arg == optv)
 			verbose= true;
-		else if (arg == "-d")
+		else if (arg == optd)
 			debugtype= Asm::DebugSecondPass;
-		else if (arg == "-1")
+		else if (arg == opt1)
 			debugtype= Asm::DebugAll;
-		else if (arg == "--err")
+		else if (arg == opterr)
 			redirecterr= true;
-		else if (arg == "--nocase")
+		else if (arg == optnocase)
 			nocase= true;
-		else if (arg == "--alocal")
+		else if (arg == optalocal)
 			autolocal= true;
-		else if (arg == "-B")
+		else if (arg == optB)
 			bracketonly= true;
-		else if (arg == "--bracket")
+		else if (arg == optbracket)
 			bracketonly= true;
-		else if (arg == "-8" || arg == "--w8080")
+		else if (arg == opt8 || arg == optw8080)
 			warn8080= true;
-		else if (arg == "--86")
+		else if (arg == opt86)
 			mode86= true;
-		else if (arg == "-I")
+		else if (arg == optI)
 		{
 			++argpos;
 			if (argpos >= argc)
-				throw "Option -I needs an argument";
+				throw NeedArgument (optI);
 			//a.addincludedir (argv [argpos] );
 			includedir.push_back (argv [argpos] );
 		}
-		else if (arg == "-E" || arg == "--equ")
+		else if (arg == optE || arg == optequ)
 		{
 			++argpos;
 			if (argpos >= argc)
-				throw "Option --equ needs an argument";
+				throw NeedArgument (arg);
 			labelpredef.push_back (argv [argpos] );
 		}
 		else if (arg == "--")
@@ -134,7 +215,7 @@ int doit (int argc, char * * argv)
 			break;
 		}
 		else if (arg.substr (0, 1) == "-")
-			throw "Invalid option: " + arg;
+			throw InvalidOption (arg);
 		else
 			break;
 	}
@@ -143,32 +224,43 @@ int doit (int argc, char * * argv)
 
 	if (argpos >= argc)
 		throw Usage ();
-	string filein= argv [argpos];
+	filein= argv [argpos];
 	++argpos;
 	if (argpos >= argc)
 		throw Usage ();
 
-	string fileout= argv [argpos];
+	fileout= argv [argpos];
 	++argpos;
-	char * filesymbol= NULL;
+
 	if (argpos < argc)
 	{
 		filesymbol= argv [argpos];
 		++argpos;
+
+		if (! emitpublic && argpos < argc)
+		{
+			filepublic= argv [argpos];
+			++argpos;
+		}
+
 		if (argpos < argc)
 			cerr << "WARNING: Extra arguments ignored" << endl;
 	}
 
 	if (headername.empty () )
 		headername= fileout;
+}
 
-	if (redirecterr)
-		perr= & std::cout;
+string Options::getfilepublic () const
+{
+	if (emitpublic)
+		return filesymbol;
+	else
+		return filepublic;
+}
 
-	// Assemble.
-
-	Asm assembler;
-
+void Options::apply (Asm & assembler) const
+{
 	assembler.setdebugtype (debugtype);
 
 	if (verbose)
@@ -192,92 +284,76 @@ int doit (int argc, char * * argv)
 	for (size_t i= 0; i < labelpredef.size (); ++i)
 		assembler.addpredef (labelpredef [i] );
 
-	assembler.loadfile (filein);
+	assembler.setheadername (headername);
+}
+
+
+int doit (int argc, char * * argv)
+{
+	// Process command line options.
+
+	Options option (argc, argv);
+
+	if (option.redirerr () )
+		perr= & cout;
+
+	// Assemble.
+
+	Asm assembler;
+
+	option.apply (assembler);
+
+	assembler.loadfile (option.getfilein () );
 	assembler.processfile ();
 
 	// Generate ouptut file.
 
-	std::ofstream out (fileout.c_str (),
+	std::ofstream out (option.getfileout ().c_str (),
 		std::ios::out | std::ios::binary);
 	if (! out.is_open () )
-		throw "Error creating object file";
+		throw CreateObjectError;
 
-	switch (format)
-	{
-	case ObjectRaw:
-		assembler.emitobject (out);
-		break;
-	case ObjectHex:
-		assembler.emithex (out);
-		break;
-	case ObjectPrl:
-		#if 0
-		{
-			// Assembly with 1 page offset to obtain
-			// the information needed to create the
-			// prl relocation table.
-			Asm assembleroff (assembler);
-			assembleroff.setbase (0x100);
-			assembleroff.processfile ();
-			// And use this second version to generate
-			// the prl.
-			assembler.emitprl (out, assembleroff);
-		}
-		#endif
-		assembler.emitprl (out);
-		break;
-	case ObjectCmd:
-		assembler.emitcmd (out);
-		break;
-	case ObjectPlus3Dos:
-		assembler.emitplus3dos (out);
-		break;
-	case ObjectTap:
-		assembler.emittap (out, headername);
-		break;
-	case ObjectTzx:
-		assembler.emittzx (out, headername);
-		break;
-	case ObjectCdt:
-		assembler.emitcdt (out, headername);
-		break;
-	case ObjectTapBas:
-		assembler.emittapbas (out, headername);
-		break;
-	case ObjectTzxBas:
-		assembler.emittzxbas (out, headername);
-		break;
-	case ObjectCdtBas:
-		assembler.emitcdtbas (out, headername);
-		break;
-	case ObjectAmsdos:
-		assembler.emitamsdos (out, headername);
-		break;
-	case ObjectMsx:
-		assembler.emitmsx (out);
-		break;
-	}
+	(assembler.* option.getemit () ) (out);
+
 	out.close ();
 
-	// Generate symbol table if required.
+	// Generate symbol table and public symbol table if required.
 
-	if (filesymbol)
+	string filesymbol= option.getfilesymbol ();
+	if (! option.publiconly () && ! filesymbol.empty () )
 	{
-		//std::ofstream sout (filesymbol);
 		std::ofstream sout;
 		std::streambuf * cout_buf= 0;
-		if (strcmp (filesymbol, "-") != 0)
+		if (filesymbol != "-")
 		{
-			sout.open (filesymbol);
+			sout.open (filesymbol.c_str () );
 			if (! sout.is_open () )
-				throw "Error creating symbols file";
+				throw SymbolFileError;
 			cout_buf= cout.rdbuf ();
 			cout.rdbuf (sout.rdbuf () );
 		}
-		if (emitpublic)
-			assembler.dumppublic (cout);
-		else
-			assembler.dumpsymbol (cout);
+		assembler.dumpsymbol (cout);
+		if (cout_buf)
+		{
+			cout.rdbuf (cout_buf);
+			sout.close ();
+		}
+	}
+
+	string filepublic= option.getfilepublic ();
+	if (! filepublic.empty () )
+	{
+		std::ofstream sout;
+		std::streambuf * cout_buf= 0;
+		if (filepublic != "-")
+		{
+			sout.open (filepublic.c_str () );
+			if (! sout.is_open () )
+				throw PublicFileError;
+			cout_buf= cout.rdbuf ();
+			cout.rdbuf (sout.rdbuf () );
+		}
+		assembler.dumppublic (cout);
 		if (cout_buf)
 		{
 			cout.rdbuf (cout_buf);
@@ -288,7 +364,9 @@ int doit (int argc, char * * argv)
 	return 0;
 }
 
+
 } // namespace
+
 
 int main (int argc, char * * argv)
 {
@@ -297,16 +375,6 @@ int main (int argc, char * * argv)
 	try
 	{
 		return doit (argc, argv);
-	}
-	catch (const char * str)
-	{
-		* perr << "ERROR: " << str << endl;
-		return 1;
-	}
-	catch (const std::string & str)
-	{
-		* perr << "ERROR: " << str << endl;
-		return 1;
 	}
 	catch (std::logic_error & e)
 	{
