@@ -1,6 +1,6 @@
 	org 30000
 
-	; Fills the spectrum screen.
+	; Fills slowly the spectrum screen.
 
 start
 	;ld hl, 4000h
@@ -12,10 +12,18 @@ other
 	ld (ix),0FFh
 	inc ix
 
-	if 1
+	if not defined NODELAY
 
 	; Delay
-	ld bc, 100h
+
+	if defined DELAYVALUE
+loops	equ DELAYVALUE
+	else
+loops	equ 100h
+	endif
+
+	ld bc, loops
+
 delay	dec bc
 	ld a,b
 	or c

@@ -27,6 +27,6 @@ hola	ld hl, _exit
 	call showtext
 	jp 0
 
-_exit	db "Hello, world\r\n", 0
+_exit	db "Hello, autolocal world\r\n", 0
 
 	end

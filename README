@@ -10,13 +10,18 @@
 	(C) 2004 Julián Albo
 	Utilización y distribución permitida bajo la licencia GPL.
 
+	Para descargar actualizaciones o obtener más información:
+	http://www.arrakis.es/~ninsesabe/pasmo/
+
 	Para compilar hacer: make
 
 	Para instalar: copiar el ejecutable pasmo a algún directorio del PATH.
 
-	Documentación: no hay, para ver la sintaxis aceptada mirar los .asm
-	incluidos como ejemplo.
-	
+	Documentación: Disponible solamente en inglés, en el fichero
+	pasmodoc.html. Si no va incluido en este paquete está
+	disponible en el sitio web de Pasmo. Ver también los ficheros
+	.asm de ejemplo incluidos en el paquete de los fuentes.
+
 	Para ensamblar:
 		pasmo [opciones] fichero.asm fichero.bin [fichero.simbolos]
 
@@ -28,6 +33,9 @@
 		-1         -->	Mostrar información de depuración
 				durante el ensamblado, también en
 				el primer paso.
+
+		-v         -->	Verboso. Muestra información de
+				progreso del ensamblado.
 
 		-I         -->	Añadir directorio a la lista de
 				directorios en los que se buscarán
@@ -70,7 +78,12 @@
 
 		--alocal   -->	Modo autolocal: las etiquetas que comienzan
 				por un '_' son locales y su ámbito termina
-				en la sigiente etiqueta no local.
+				en la sigiente etiqueta no local o en la
+				siguiente directiva PROC, LOCAL o MACRO.
+
+		-E
+		--equ	   -->	Predefine una etiqueta.
+
 
 	Si ninguna opción indica lo contrario, el formato del código objeto
 generado es binario sin cabecera.
@@ -79,7 +92,7 @@ generado es binario sin cabecera.
 a la salida de error.
 
 
-Comentarios y críticas a: ninsesabe@arrakis.es
+Comentarios y críticas a: julian.notfound@gmail.com
 
 
 		*		*		*
@@ -93,12 +106,16 @@ Comentarios y críticas a: ninsesabe@arrakis.es
 	(C) 2004 Julián Albo
 	Use and distribution allowed under the terms of the GPL license.
 
+	To download updates or obtain more information:
+	http://www.arrakis.es/~ninsesabe/pasmo/
+
 	To compile do: make
 
 	To install: copy the pasmo executable to some directory in the PATH.
 
-	Documentation: there is none, the syntax accepted can be seen in the
-	.asm included as examples.
+	Documentation: See the file pasmodoc.html, included in this
+	package or in the Pasmo web site. See also the .asm sample
+	files included with the souce package.
 
 	To assemble:
 		pasmo [options] file.asm file.bin [file.symbol]
@@ -109,6 +126,9 @@ Comentarios y críticas a: ninsesabe@arrakis.es
 
 		-1         -->	Show debug info during assembly,
 				also in first pass.
+
+		-v         -->	Verbose. Show progress information
+				during assembly.
 
 		-I         -->	Add directory to the list for
 				searching files in INCLUDE and INCBIN.
@@ -149,7 +169,12 @@ Comentarios y críticas a: ninsesabe@arrakis.es
 
 		--alocal   -->	Autolocal mode: the labels than begins with
 				a '_' are locals, and his ambit finishes in
-				the next no local label.
+				the next no local label or in the next PROC,
+				LOCAL or MACRO directive.
+
+		-E
+		--equ	   -->	Predefine a label.
+
 
 	If no options specify another, the object code format is binary
 without headers.
@@ -158,4 +183,4 @@ without headers.
 output.
 
 
-Comments and criticisms to: ninsesabe@arrakis.es
+Comments and criticisms to: julian.notfound@gmail.com

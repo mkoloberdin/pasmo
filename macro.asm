@@ -10,6 +10,8 @@ type	equ 2
 cr	equ 0Dh
 lf	equ 0Ah
 
+_hola
+
 chrout	macro
 	ld c, type
 	call bdos

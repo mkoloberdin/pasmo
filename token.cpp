@@ -1,5 +1,5 @@
 // token.cpp
-// Revision 6-apr-2004
+// Revision 6-nov-2004
 
 #include "token.h"
 
@@ -109,6 +109,7 @@ const NameType nt []= {
 	NT (GE),
 	NT (NE),
 	NT (NUL),
+	NT (DEFINED),
 
 	// Nemonics
 	NT (ADC),

@@ -1,0 +1,916 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"> 
+<html>
+
+<head>
+
+<meta http-equiv="Content-Type" content="text/html;charset=ISO-8859-1" >
+
+<title>Pasmo documentation.</title>
+
+</head>
+
+<body>
+
+<h1>Pasmo documentation (unfinished).</h1>
+
+<p>
+(C) 2004 Juli&aacute;n Albo.
+</p>
+
+<p>
+Use and distribution allowed under the terms of the GPL license.
+</p>
+
+<p>
+Last revision date: 7-nov-2004
+</p>
+
+<p>
+Current Pasmo version: 0.4.0
+</p>
+
+<h2>Index.</h2>
+
+<ul>
+
+<li><a href="#intro">Introduction.</a></li>
+
+<li><a href="#install">Installation.</a></li>
+
+<li><a href="#command">Command line use.</a></li>
+
+<li><a href="#codegen">Code generation information.</a>
+	<ul>
+	<li><a href="#codegendefault">Default mode.</a></li>
+	<li><a href="#codegenhex">--hex mode.</a></li>
+	<li><a href="#codegenprl">--prl mode.</a></li>
+	<li><a href="#codegentap">--tap mode.</a></li>
+	<li><a href="#codegentapbas">--tapbas mode.</a></li>
+	<li><a href="#codegensymbol">Symbol table.</a></li>
+	</ul>
+</li>
+
+<li><a href="#source">Source code format.</a>
+	<ul>
+	<li><a href="#sourcegeneral">Generalities.</a>
+	<li><a href="#sourcelit">Literals.</a>
+		<ul>
+		<li><a href="#sourcelitnum">Numeric literals.</a>
+		<li><a href="#sourcelitstr">String literals.</a>
+		</ul>
+	</li>
+	<li><a href="#sourceident">Identifiers.</a>
+	<li><a href="#sourcefilename">File names.</a>
+	<li><a href="#sourcelabel">Labels.</a>
+	</ul>
+</li>
+
+<li><a href="#directives">Directives.</a></li>
+
+<li><a href="#operators">Operators.</a></li>
+
+<li><a href="#macros">Macros.</a></li>
+
+<li><a href="#discussion">About suggestions and possible improvements.</a></li>
+
+<li><a href="#tricks">Tricks.</a></li>
+
+<li><a href="#bugs">Bugs.</a></li>
+
+<li><a href="#epilogue">Epilogue.</a></li>
+
+</ul>
+
+<h2><a name="intro">Introduction</a>.</h2>
+
+<p>
+Pasmo is a multiplatform Z80 cross-assembler, easy to compile and easy to
+use. It can generate object code in several formats suitable for many
+Z80 machines and emulators.<br>
+Pasmo generates fixed position code, can not be used to create relocatable
+object files for use with linkers.
+</p>
+
+<p>
+Pasmo is compatible with the syntax used in several old assemblers, by
+supporting several styles of numeric and string literals and by
+providing several names of the most used directives.<br>
+However, in Pasmo the Z80 mnemonics, register and flags names and
+directives are reserved words, this may require changes of symbol
+names conflicting in some programs.
+</p>
+
+<h2><a name="install">Installation</a>.</h2>
+
+<p>
+Download Pasmo from
+<a href="http://www.arrakis.es/~ninsesabe/pasmo/"
+>http://www.arrakis.es/~ninsesabe/pasmo/</a>.
+A binary executable for windows is provided, for other platforms you must
+download the source package and compile it. If you want to compile it in
+windows you can use cygwin or mingw with the Makefile provided, with other
+compilers you may need to create a project, workspace or whatever your
+compiler or IDE uses.<br>
+To compile you need gcc version 2.95 or later, with the c++ language
+included (usually a package called g++-something).<br>
+Others compilers may also be used, any reasonable standard complaint
+c++ compiler must compile it with few or none corrections.<br>
+Just execute 'make' in the pasmo directory, and the excutable will be
+generated. There is no install, you must manually copy the executable
+to a directory in the PATH, if you want.
+</p>
+
+<h2><a name="command">Command line use</a>.</h2>
+
+<p>
+Pasmo is invoked from command line as:
+</p>
+
+<pre>
+	pasmo [options] file.asm file.bin [file.symbol]
+</pre>
+
+<p>
+Where file.asm is the source file, file.bin is the object file to be created
+and optionally file.symbol is the file where the symbol table will be
+written, use - to write it in the standard output. Options can be zero or
+more of the following:
+</p>
+
+<dl>
+
+<dt>-d</dt>
+<dd>Show debug info during second pass of assembly.</dd>
+
+<dt>-1 (digit 'one')</dt>
+<dd>Show debug info during both passes of assembly.</dd>
+
+<dt>-v</dt>
+<dd>
+Verbose mode. Show progress information about loading of files,
+progress of assembly and maybe other things.
+</dd>
+
+<dt>-I (upper case i)</dt>
+<dd>Add directory to the list for searching files in INCLUDE and
+INCBIN.</dd>
+
+<dt>-E</dt>
+<dd>Same as --equ</dd>
+
+<dt>--hex</dt>
+<dd>Generate the object file in Intel HEX format.</dd>
+
+<dt>--prl</dt>
+<dd>Generate the object file in PRL format, useful for CP/M Plus RSX.</dd>
+
+<dt>--plus3dos</dt>
+<dd>Generate the object file with PLUS3DOS header (Spectrum disk).</dd>
+
+<dt>--tap</dt>
+<dd>Generate a .tap file for Spectrum emulators (tape image).</dd>
+
+<dt>--tapbas</dt>
+<dd>Same as --tap but adding a Basic loader before the code.</dd>
+
+<dt>--amsdos</dt>
+<dd>Generate the object file with Amsdos header (Amstrad CPC disk).</dd>
+
+<dt>--msx</dt>
+<dd>Generate the object file with header for use with BLOAD in MSX Basic.</dd>
+
+<dt>--public</dt>
+<dd>The symbol table listing will include only symbols declared as PUBLIC.</dd>
+
+<dt>--name</dt>
+<dd>Name to put in the header in the formats that use it. If unspecified
+the object file name will be used.</dd>
+
+<dt>--err</dt>
+<dd>Direct error messages to standard output instead of error output
+(except for errors in options).</dd>
+
+<dt>--nocase</dt>
+<dd>Make identifiers case insensitive.</dd>
+
+<dt>--alocal</dt>
+<dd>Use autolocal mode. In this mode all labels that begins with '_'
+are locals. See the chapter about labels for details.
+.</dd>
+
+<dt>--equ</dt>
+<dd>
+Predefine a symbol. Predefined symbol are treated in a similar way as
+defineds with EQU. Some possible uses are exemplified in the black.asm
+example file. The syntax is: '--equ label=value' where label must be
+a valid label name and value a numeric constant in a format valid in
+pasmo syntax. The part =value is optional, if not specified the value
+asigned is FFFF hex.
+</dd>
+
+</dl>
+
+<p>
+When no option for code generation is specified, the format used is
+binary without headers.
+</p>
+
+<p>
+The -d option is intended to debug pasmo itself, but can also be useful
+to find errors in asm code. When used the information is showed in the
+standard output. Error messages goes to error ouptut unless the --err
+option is used.
+</p>
+
+<h2><a name="codegen">Code generation information</a>.</h2>
+
+<h3><a name="codegendefault">Default mode</a></h3>
+
+<p>
+The default mode just dumps the code generated from the first
+position used without any header. This mode can be used for
+direct generation of CP/M or MSX COM files, supposed that you
+use a ORG 100H directive at the beginning of the code, or to
+generate blocks of code to be INCBINed in other programs.
+</p>
+
+<h3><a name="codegenhex">--hex mode</a></h3>
+
+<p>
+The --hex mode generates code in Intel HEX format. This format can
+be used with the LOAD or HEXCOM CP/M utilities, can be transmitted
+more easily than a binary format, and is also used in some PROM
+programming tools.
+</p>
+
+<h3><a name="codegenprl">--prl mode</a></h3>
+
+<p>
+The prl format is used in several variants of Digital Research CP/M
+operating system. In pasmo is supported only to create RSX files for
+use in CP/M Plus, use for PRL files in MP/M is not supported because
+I don't have a MP/M system, real or emulated, where to test it.
+</p>
+
+<h3><a name="codegentap">--tap mode</a></h3>
+
+<p>
+The --tap options generates a tap file with a code block, with the
+loading position set to the beginnig of the code so you can load it
+with a LOAD "" CODE instruction.
+</p>
+
+<h3><a name="codegentapbas">--tapbas mode</a></h3>
+
+<p>
+With the --tapbas option a tap file is generated with two parts:
+a Basic loader and a code block with the object code. The Basic
+loader does a CLEAR before the initial address of the code, loads
+the code, and executes it if a entry point is defined (see the END
+directive). That way you can directly launch the code in a emulator,
+or transfer it to a tape for use in a real Spectrum.
+</p>
+
+<h3><a name="codegensymbol">Symbol table</a></h3>
+
+<p>
+The symbol table generated contains all identifiers used in the program,
+with the locals represented as a 8 digit hexadecimal number in order of
+use, unless the --public option is used. In that case only the symbols
+specified in PUBLIC directives are listed.
+</p>
+
+<p>
+The symbol table format is a list of EQU directives. That way you can
+INCLUDE it in another source to create programs composed of several
+blocks.
+</p>
+
+<h2><a name="source">Source code format</a>.</h2>
+
+<h3><a name="sourcegeneral">Generalities</a>.</h3>
+
+<p>
+Source code files must be valid text files in the platform used. The use of,
+for example, unix text files under pasmo in windows, is unsupported and the
+result is undefined (may depend of the compiler used to build pasmo, for
+example). The result of the use of a file that contains vertical tab or
+form feed characters is also undefined.
+</p>
+
+<p>
+Everything after a ; in a line is a comment (unlees the ; is part of a
+string literal, of course). There are no nultiline comments, you can
+use IF 0 .... ENDIF instead (but see INCLUDE).
+</p>
+
+<p>
+String literals are written to the object file without any character set
+translation. Then the use of any character with a different meaning in
+the platform were pasmo is running and the destination machine must be
+avoided, and the code of the character may be used instead. That also
+means that using Pasmo in any machine that uses a non ascii compatible
+character set may be difficult, and that a source written in utf-8 may
+give undesired results. This may be changed in future versions of Pasmo.
+</p>
+
+<p>
+A line may begin with a decimal number followed by blanks. This number
+is ignored by the assembler, is allowed for compatibility with old
+assemblers. The line number reported in errors is the sequential number
+of the line in the file, not this.
+</p>
+
+<p>
+Blanks are significative only in string literals and when they separate
+lexical elements. Any number of blanks has the same meaning as one.
+A blank between operators and operands is allowed but no required except
+when the same character has other meaning as prefix ('$' and '%', for
+example).
+</p>
+
+<h3><a name="sourcelit">Literals</a>.</h3>
+
+<h4><a name="sourcelitnum">Numeric literals</a>.</h4>
+
+<p>
+Numeric literals can be written in decimal, binary, octal and hexadecimal
+formats. Several formats are accepted to obtain compatibility with the
+source format of several assemblers.
+</p>
+
+<p>
+A literal that begins with $ is a hexadecimal constant, except if the
+literal is only the $ symbol, in that case is an operator, see below.
+</p>
+
+<p>
+A literal that begins with # is a hexadecimal constant.
+</p>
+
+<p>
+A literal that begins with &amp; can be hexadecimal, octal or binary
+constant, depending of the character that follows the &amp;: H means
+hexadecimal, O octal and X hexadecimal, if none of this the caracter
+must be a valid hexadecimal digit and the constant is hexadecimal.
+</p>
+
+<p>
+A literal that begins with % is a binary constant, except if the literal
+is only the % symbol, in that case is an operator, see below.
+</p>
+
+<p>
+A literal that begins with a decimal digit can be a decimal, binary,
+octal or hexadecimal. If the digit is 0 and the following character is
+an X, the number is hexadecimal. If not, the suffix of the literal is
+examined: D means decimal, B binary, H hexadcimal and O or Q octal,
+in any other case is taken as decimal. Take care, FFFFh for example is
+not an hexadecimal constant, is an identifier, to write it with the
+suffix notation you must do it as 0FFFFh.
+</p>
+
+<h4><a name="sourcelitstr">String literals</a>.</h4>
+
+<p>
+There are two formats of string literals: single or double quote
+delimited.
+</p>
+
+<p>
+A string literal delimited with single quotes is the simpler format,
+all characters are included in the string without any special
+interpretation, with the only exception that two consecutive single
+quotes are taken as one single quote character to be included in the
+string. For example: the single quote delimited string
+'That''s all folks' generates the same string as the double quote
+delimited &quot;That's all folks&quot;.
+</p>
+
+<p>
+A string literal delimited with double quotes is interpreted in a
+way similar to the C and C++ languages. The \ character is taken
+as escape character, with the following interpretations: n is a
+new line character (0A hex), r is a carriage return (0D hex), t is
+a tabulator (09 hex), a is a bell (07 hex), x indicates that the
+two next characters will be considered the hexadecimal code of
+a char and a char with that code is inserted, an octal digit prefixes
+and begins an octal number of up to three digits, and the corresponding
+character is inserted into the string, the characters \ and &quot;
+means to insert itself in the string, and any other char is reserved
+for future use.
+</p>
+
+<p>
+A string literal of length 1 can be used as a numeric constant with
+the numeric value of the character contained. This allows expressions
+such as 'A' + 80h to be evaluated as expected.
+</p>
+
+<h3><a name="sourceident">Identifiers</a>.</h3>
+
+<p>
+Identifiers are the names used for labels, EQU and DEFL symbols and
+macro names and parameters. The names of the Z80 mnemonics, registers
+and flag names, and of pasmo operands and assemble directives are
+reserved and can not be used as names of identifiers. Reserved names
+are case insensitive, even if case sensitive mode is used.
+</p>
+
+<p>
+In the following 'letter' means an english letter character in
+upper or lower case. Characters that correspond to letters in
+other languages are not allowed in identifiers.
+</p>
+
+<p>
+Identifiers begins with a letter, '_', '?', '@' or '.', followed for
+zero or more letter, decimal digit, '_', '?', '@', '.' or '$'.
+The '$' are ignored. Identifiers that begins with '_' are special
+when using autolocal mode, see the --alocal option and the chapter
+about labels.
+</p>
+
+<p>
+Identifiers are case sensitive if the option --nocase is not used.
+When using --nocase, they are always converted to upper case.
+</p>
+
+<h3><a name="sourcefilename">File names</a>.</h3>
+
+<p>
+File names are used in the INCLUDE and INCBIN directives. They follow
+special rules.
+</p>
+
+<p>
+A file name that begins with a double quote character must end with
+another double quote, and the file name contains all character between
+them without any special interpretation.
+</p>
+
+<p>
+A file name that begins with a single quote character must end with
+another single quote, and the file name contains all character between
+them without any special interpretation.
+</p>
+
+<p>
+In any other case all characteres until the next blank or the end of line
+are considered part of the file name. Blank characters are space and tab.
+</p>
+
+<h3><a name="sourcelabel">Labels</a>.</h3>
+
+<p>
+A label can be placed at the beginning of any line, before any
+assembler mnemonic or directive. Optionally can be followed by
+a ':', but is not recommended to use it in directives, for
+compatibility with other assemblers. A line that has a label
+with no mnemonic nor directive is also valid.
+</p>
+
+<p>
+The label has special meaning in the MACRO, EQU and DEFL directives,
+in any other case the value of the current code generation position is
+assigned to the label.
+</p>
+
+<p>
+Labels can be used before his definition, but the result of doing this
+with labels assigned with DEFL is undefined.
+</p>
+
+<p>
+The value of a label cannot be changed unless DEFL is used in all
+assignments of that label. If the value assigned to a label is
+different in the two passes of the assembly the program is illegal,
+but is not guaranteed that an error is generated. However, is legal
+to assign a value undefined in the first pass (by using an expression
+that contains a label not yet defined, for example).
+</p>
+
+<p>
+In the default mode a label is global unless declared as LOCAL into
+a MACRO, REP or IRP block, see the LOCAL directive for details.
+</p>
+
+<p>
+In the autolocal mode, introduced by using the --alocal command line
+option, all labels that begins with a '_' are locals. His ambit ends
+at the next non local label or in the next PROC, LOCAL, MACRO, ENDP
+or ENDM directive.
+</p>
+
+<p>
+Both automatic and explicit local labels are represented in the symbol
+table listing as 8 digit hexadecimal numbers, corresponding to the first
+use of the label in the source.
+</p>
+
+<h2><a name="directives">Directives</a>.</h2>
+
+<p>
+List of directives supported in Pasmo, in alphabetical order.
+<p>
+
+<dl>
+
+<dd>DB</dd>
+<dt>
+Define Byte. The argument is a comma separated list of string literals
+or numeric expressions. The string literals are inserted in the object
+code, and the result of the numeric expression is inserted as a single
+byte, truncating it if needed.
+</dt>
+
+<dd>DEFB</dd>
+<dt>DEFine Byte, same as DB.</dt>
+
+<dd>DEFL</dd>
+<dt>DEFine Label. Must be preced by a label. The argument must be a
+numeric expression, the result is assigned to the label. The label
+used can be redefined with other DEFL directive.
+</dt>
+
+<dd>DEFM</dd>
+<dt>DEFine Message, same as DB.</dt>
+
+<dd>DEFS</dd>
+<dt>DEFine Space, same as DS.</dt>
+
+<dd>DEFW</dd>
+<dt>Same as DW.</dt>
+
+<dd>DS</dd>
+<dt>Define Space. Take one or two comma separated arguments.
+The first or only argument is the amount of space to define,
+in bytes. The second is the value used to fill the space,
+if absent 0 will be used.
+</dt>
+
+<dd>DW</dd>
+<dt>Define Word. The argument is a comma separated list of numeric
+expressions. Each numeric expression is evaluated as a two byte word
+and the result inserted in the code in the Z80 word format.
+</dt>
+
+<dd>ELSE</dd>
+<dt>See IF.
+</dt>
+
+<dd>END</dd>
+<dt>Ends the assembly. If it has an argument is evaluated as a numeric
+expression and the result is set as the program entry point. The result
+of setting an entry point depends of the type of code generation used,
+may be none but even in this case may be used for documentation
+purposes.
+</dt>
+
+<dd>ENDIF</dd>
+<dt>See IF.
+</dt>
+
+<dd>ENDM</dd>
+<dt>Ends a macro, see the chapter about macros.
+</dt>
+
+<dd>ENDP</dd>
+<dt>Marks the end of a PROC block, see PROC.
+</dt>
+
+<dd>EQU</dd>
+<dt>EQUate. Must be preceded by a label. The argument must be a numeric
+expression, the result is assigned to the label. The label used can't be
+redefined.
+</dt>
+
+<dd>EXITM</dd>
+<dt>Exits a macro, see the chapter about macros.
+</dt>
+
+<dd>IF</dd>
+<dt>Contional assembly. The argument must be a numeric expression, a result
+of 0 is considered as false, any other as true. If the argument is true the
+following code is assembled until the end of the IF section or an ELSE
+directive is encountered, else is ignored. If the ELSE direcive is present
+the following code is ignored if the argument was true, or is assmbled if
+was false.<br>
+The IF section is ended with a ENDIF or a ENDM directive (in the last case
+the ENDM has also his usual effect).<br>
+IF can be nested, in that case each ELSE and ENDIF takes effect only on his
+corresponding IF, but ENDM ends all pending IF sections.
+</dt>
+
+<dd>INCLUDE</dd>
+<dt>Include a file. See the Source code format chapter for the conventions
+used in the argument. The file is readed and the result is the same as if
+the file were copied in the current file instead of the INCLUDE line.<br>
+The file included may contain INCLUDE directives, and so on.<br>
+INCLUDE directives are processed before the assembly phases, so the use
+of IF directives to conditionally include different files is not allowed.
+</dt>
+
+<dd>INCBIN</dd>
+<dt>INClude BINary. Include a binary file. Reads a binary file and insert
+his content in the generated code at the current position. See the Source
+code format chapter for the conventions used in the argument.
+</dt>
+
+<dd>IRP</dd>
+<dt>Repeat a block of code substituing arguments. See the chapter about
+macros.
+</dt>
+
+<dd>LOCAL</dd>
+<dt>Marks identifiers as local to the current block. The block may be
+a MACRO, REPT, IRP or PROC directive, the local ambit ends in the
+corresponding ENDM or ENDP directive. The ambit begins at the LOCAL
+directive, not at the beginning of the block, take care with that.<br>
+If several LOCAL declations of the same identifier are used in the same
+block, only the first has effect, the others are ignored.
+</dt>
+
+<dd>MACRO</dd>
+<dt>Defines a macro, see the chapter about macros.
+</dt>
+
+<dd>ORG</dd>
+<dt>ORiGin. Establishes the origin position where to place generated
+code. Several ORG directives can be used in the same program, but if
+the result is that code generated overwrites previous, the result is
+undefined.
+</dt>
+
+<dd>PROC</dd>
+<dt>Marks the begin of a PROC block. The only effect is to define
+an ambit for LOCAL directives. The block ends with a corresponding
+ENDP directive. The recommended use is to enclose a subroutine in
+a PROC block, but can also be used in any other situation.
+</dt>
+
+<dd>PUBLIC</dd>
+<dt>The argument is a comma separated list of identifiers. Each identifier
+is marked as public. When using the --public command line option only the
+identifiers marked as public are included in the symbol table listing.
+</dt>
+
+<dd>REPT</dd>
+<dt>REPeaTs a block. See the chapter about macros.
+</dt>
+
+</dl>
+
+<h2><a name="operators">Operators</a>.</h2>
+
+<p>
+Table of operators by order of precedence, those in the same line have the
+same precedence:
+</p>
+
+<pre>
+	$, NUL, DEFINED
+	*, /, MOD, %, SHL, SHR
+	+, - (binary)
+	EQ, NE, LT, LE, GT, GE,
+	NOT, +, - (unary)
+	AND
+	OR, XOR
+</pre>
+
+<p>
+All numeric values are taken as 16 bits unsigned, using 2 complement or
+trucating when required. Logical operators return FFFF hex for true and 0
+for false, in the arguments 0 is false and any other value true.
+</p>
+
+<p>
+Alphabetic list of operators:
+</p>
+
+<dl>
+
+<dd>$</dd>
+<dt>
+Gives the value of the position counter at the begin of the current sentence.
+For example, in a DW directive it gives the position of the first item in
+the list, not the current item.
+</dt>
+
+<dd>%</dd>
+<dt>
+Same as MOD.
+</dt>
+
+<dd>*</dd>
+<dt>
+Multiplication.
+</dt>
+
+<dd>+</dd>
+<dt>
+Addition or unary +.
+</dt>
+
+<dd>-</dd>
+<dt>
+Substraction or unary -.
+</dt>
+
+<dd>/</dd>
+<dt>
+Integer division, truncated.
+</dt>
+
+<dd>AND</dd>
+<dt>
+Binary and operator.
+</dt>
+
+<dd>DEFINED</dd>
+<dt>
+The argument must be a label. The result is true if the label is defined,
+false otherwise.
+</dt>
+
+<dd>EQ</dd>
+<dt>
+Equals. True if both operands are equal, false otherwise.
+</dt>
+
+<dd>GE</dd>
+<dt>
+Greater or equal. True if the left operand is greater or equal than the right.
+</dt>
+
+<dd>GT</dd>
+<dt>
+Greater than. True if the left operand is greater than the right.
+</dt>
+
+<dd>LE</dd>
+<dt>
+Less or equal. True if the left operand is lesser or equal than the right.
+</dt>
+
+<dd>LT</dd>
+<dt>
+Less than. True if the lefth operand is lesser than the right.
+</dt>
+
+<dd>MOD</dd>
+<dt>
+Modulus. The remainder of the integer division.
+</dt>
+
+<dd>NE</dd>
+<dt>
+Not equal. False if both operands are equal, true otherwise.
+</dt>
+
+<dd>NOT</dd>
+<dt>
+Return the ones complement of his operand.
+</dt>
+
+<dd>NUL</dd>
+<dt>
+Returns true if there is something at his right, false in other case.
+Useful if the arguments are parameters of macros.
+</dt>
+
+<dd>OR</dd>
+<dt>
+Binary or operator.
+</dt>
+
+<dd>SHL</dd>
+<dt>
+Shif left. Returns the left operand shifted to the left the number of bits
+specified in the right operand, filling with zeroes.
+</dt>
+
+<dd>SHR</dd>
+<dt>
+Shif right. Returns the left operand shifted to the right the number of bits
+specified in the right operand, filling with zeroes.
+</dt>
+
+<dd>XOR</dd>
+<dt>
+Binary xor (exclusive or) operator.
+</dt>
+
+</dl>
+
+<h2><a name="macros">Macros</a>.</h2>
+
+<p>
+This chapter is not written yet.
+</p>
+
+<h2><a name="discussion">About suggestions and possible improvements</a>.</h2>
+
+<p>
+The assumption of Pasmo if that, being a cross-assembler, it will be
+used on a machine with many available resources. Then I do not make
+any effort to provide means to do things that can be easily made
+with other utilities, unless I think (or other people convince me)
+that including it in Pasmo can be much more convenient.<br>
+For example, if you want to create a sin table you can write a program
+in your favourite language that writes a file with the table and
+INCLUDE that file, if you want a .tzx file instead of a .tap there
+are conversion utilities availables, and if you want to automate that
+type of things you can use make.
+</p>
+
+<p>
+Taken that into account, I am open to suggestions to improve Pasmo
+and to patches that implements it. In the later case please take
+care to write things in a portable way, without operating system
+or compiler dependences.
+</p>
+
+<h3>Why Pasmo can not generate linkable code?</h3>
+
+<p>
+Pasmo has a simple code generator that uses absolute address of memory.
+That will make difficult to adapt it to generate relocatable code for
+use with linkers.
+I don't have plans to do it for the moment, maybe someone want to
+contribute?
+</p>
+
+<h3>Game Boy.</h3>
+
+<p>
+Some people suggested to add support for Game Boy programming. There
+are two problems, the simplified way used to generate code in Pasmo,
+and my inexistent knowledge of the Game Boy.
+</p>
+
+<h3>Thanks.</h3>
+
+<p>
+Thanks to all people that has made suggestions and notified or
+corrected bugs. And to these that show me the beautiful things they
+do with Pasmo.
+</p>
+
+<h2><a name="tricks">Tricks</a>.</h2>
+
+<p>
+You can use Pasmo to convert any binary file to .tap, just write a tiny
+program called for example convert.asm:
+</p>
+
+<pre>
+	ORG address_to_load_the_file
+	INCBIN file.bin
+</pre>
+
+<p>
+Assemble it with: pasmo --tap convert.asm file.tap, and you have it.
+The same may be done for the other formats supported.
+</p>
+
+<h2><a name="bugs">Bugs</a>.</h2>
+
+<p>
+If you accidentally try to use an inexistent Z80 instruction such
+as 'ls b,(nn)' Pasmo can't detect the error because it interprets
+the instruction as 'ld b,n', taken the expression with parenthesis
+as the value of n. Forbid that will make more difficult to use
+instructions such as 'ld b,(a1 + a2)/2', and in the way currently
+used to parse expressions is not possible to distinguish between
+this cases.<br>
+A possible solution is to disambiguate the meaning of the parenthesis
+by  using '[ ]' instead of '( )' to mean 'position pointed by', a
+future version of Pasmo may include a option to do that. But that
+does not solve the problem if you need or want to use the classic
+syntax. I'm open to suggestions.
+</p>
+
+<p>
+There is no way to include a file whose name contains blanks, single
+and double quoutes. Someone use file names like that?
+</p>
+
+<h2><a name="epilogue">Epilogue</a>.</h2>
+
+<p>That's all folks!</p>
+
+<p>
+Send comments and criticisms to:
+</p>
+<address><a href="mailto:julian.notfound@gmail.com"
+>julian.notfound@gmail.com</a>
+</address>
+
+<p>
+<a href="http://validator.w3.org/check?uri=referer">Valid HTML 4.0!</a>
+</p>
+
+</body>
+
+</html>

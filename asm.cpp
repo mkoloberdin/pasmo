@@ -1,5 +1,5 @@
 // asm.cpp
-// Revision 27-oct-2004
+// Revision 7-nov-2004
 
 #include "asm.h"
 #include "token.h"
@@ -7,8 +7,6 @@
 // ostream not included with gcc 2.95
 //#include <ostream>
 #include <iostream>
-using std::cerr;
-using std::endl;
 
 #include <fstream>
 #include <iomanip>
@@ -24,6 +22,10 @@ using std::endl;
 #include <assert.h>
 #define ASSERT assert
 
+using std::cout;
+using std::cerr;
+using std::endl;
+using std::runtime_error;
 using std::logic_error;
 
 //*********************************************************
@@ -39,35 +41,6 @@ const byte prefixIX= 0xDD;
 const byte prefixIY= 0xFD;
 
 const char AutoLocalPrefix= '_';
-
-#if 0
-
-inline void sethex (std::ostream & os, int n)
-{
-	// uppercase manipulator not available with gcc 2.95
-	os.setf (std::ios::uppercase);
-	os << std::hex << std::setw (n) << std::setfill ('0');
-}
-
-std::ostream & hex2 (std::ostream & os)
-{
-	sethex (os, 2);
-	return os;
-}
-
-std::ostream & hex4 (std::ostream & os)
-{
-	sethex (os, 4);
-	return os;
-}
-
-std::ostream & hex8 (std::ostream & os)
-{
-	sethex (os, 8);
-	return os;
-}
-
-#else
 
 class Hex2 {
 public:
@@ -136,8 +109,6 @@ std::ostream & operator << (std::ostream & os, const Hex8 & h8)
 	showhex4 (os, nn & 0xFFF);
 	return os;
 }
-
-#endif
 
 std::string localname (size_t n)
 {
@@ -372,12 +343,15 @@ public:
 
 	~In ();
 
+	void verbose ();
 	void setdebugtype (DebugType type);
 	void errtostdout ();
 	void setbase (unsigned int addr);
 	void caseinsensitive ();
 	void autolocal ();
+
 	void addincludedir (const std::string & dirname);
+	void addpredef (const std::string & predef);
 
 	void processfile (const std::string & filename);
 	void emitobject (std::ostream & out);
@@ -424,6 +398,7 @@ private:
 	void parsegeneric (Tokenizer & tz, Token tok);
 	void parseorg (Tokenizer & tz);
 	void setequorlabel (const std::string & name, address value);
+	void setdefl (const std::string & name, address value);
 	void parselabel (Tokenizer & tz, const std::string & name);
 	void parsemacro (Tokenizer & tz, const std::string & name);
 	void parsedesp (Tokenizer & tz, byte & desp);
@@ -501,7 +476,11 @@ private:
 	mapvar_t mapvar;
 	typedef std::set <std::string> setpublic_t;
 	setpublic_t setpublic;
-	enum Defined { NoDefined, DefinedDEFL, DefinedPass1, DefinedPass2 };
+	enum Defined {
+		NoDefined,
+		DefinedDEFL,
+		PreDefined, DefinedPass1, DefinedPass2
+	};
 	typedef std::map <std::string, Defined> vardefined_t;
 	vardefined_t vardefined;
 
@@ -528,123 +507,22 @@ private:
 	std::vector <LineInfo> vlineinfo;
 
 	size_t iflevel;
+
+	// ********* Information streams ********
+
+	Nullostream nullout;
 	std::ostream * pout;
 	std::ostream * perr;
+	std::ostream * pverb;
 
 	// ********* Local **********
 
-	//class LocalLevel;
 	friend class LocalLevel;
 
 	std::vector <address> localvalue;
 	size_t localcount;
 
 	void initlocal () { localcount= 0; }
-
-	#if 0
-
-	class LocalLevel {
-	public:
-		LocalLevel (Asm::In & asmin) :
-			asmin (asmin)
-		{ }
-		virtual ~LocalLevel ()
-		{
-			for (mapvar_t::iterator it= saved.begin ();
-				it != saved.end ();
-				++it)
-			{
-				const std::string & name=
-					globalized [it->first];
-				asmin.mapvar [name]=
-					asmin.mapvar [it->first];
-				asmin.mapvar [it->first]= it->second;
-				std::swap (asmin.vardefined [it->first],
-					asmin.vardefined [name] );
-			}
-		}
-		void add (const std::string & var)
-		{
-			// Ignore redeclarations as LOCAL
-			// of the same identifier.
-			if (saved.find (var) != saved.end () )
-				return;
-
-			saved [var]= asmin.mapvar [var];
-			const std::string name= localname (asmin.localcount);
-			globalized [var]= name;
-			std::swap (asmin.vardefined [var],
-				asmin.vardefined [name] );
-			++asmin.localcount;
-			if (asmin.pass == 1)
-			{
-				asmin.localvalue.push_back (0);
-				ASSERT (asmin.localcount ==
-					asmin.localvalue.size () );
-			}
-			else
-			{
-				ASSERT (asmin.localcount <=
-					asmin.localvalue.size () );
-				asmin.mapvar [var]=
-					asmin.mapvar [name];
-			}
-		}
-	private:
-		Asm::In & asmin;
-		mapvar_t saved;
-		std::map <std::string, std::string> globalized;
-	};
-	class ProcLevel : public LocalLevel {
-	public:
-		ProcLevel (Asm::In & asmin, size_t line) :
-			LocalLevel (asmin),
-			line (line)
-		{ }
-		size_t getline () const { return line; }
-	private:
-		size_t line;
-	};
-	class MacroLevel : public LocalLevel {
-	public:
-		MacroLevel (Asm::In & asmin) :
-			LocalLevel (asmin)
-		{ }
-	};
-	class LocalStack {
-	public:
-		~LocalStack ()
-		{
-			while (! st.empty () )
-				pop ();
-		}
-		bool empty () const
-		{
-			return st.empty ();
-		}
-		void push (LocalLevel * level)
-		{
-			st.push (level);
-		}
-		LocalLevel * top ()
-		{
-			if (st.empty () )
-				throw "Not in LOCAL valid level";
-			return st.top ();
-		}
-		void pop ()
-		{
-			if (st.empty () )
-				throw "Not in LOCAL valid level";
-			delete st.top ();
-			st.pop ();
-		}
-	private:
-		typedef std::stack <LocalLevel *> st_t;
-		st_t st;
-	};
-
-	#endif
 
 	LocalStack localstack;
 
@@ -669,6 +547,9 @@ private:
 	void expandMACRO (Macro macro, Tokenizer & tz);
 	void parseREPT (Tokenizer & tz);
 	void parseIRP (Tokenizer & tz);
+
+	class MacroFrame;
+	friend class MacroFrame;
 
 	// ******** Paths for include ************
 
@@ -804,8 +685,10 @@ Asm::In::In () :
 	minused (65535),
 	maxused (0),
 	hasentrypoint (false),
-	pout (& std::cout),
-	perr (& std::cerr),
+	pass (0),
+	pout (& cout),
+	perr (& cerr),
+	pverb (& nullout),
 	localcount (0)
 {
 }
@@ -820,7 +703,7 @@ Asm::In::In (const Asm::In & in) :
 	minused (65535),
 	maxused (0),
 	hasentrypoint (false),
-	pout (& std::cout),
+	pout (& cout),
 	perr (in.perr),
 	localcount (0),
 	includepath (in.includepath)
@@ -831,6 +714,11 @@ Asm::In::~In ()
 {
 }
 
+void Asm::In::verbose ()
+{
+	pverb= & cerr;
+}
+
 void Asm::In::setdebugtype (DebugType type)
 {
 	debugtype= type;
@@ -838,7 +726,7 @@ void Asm::In::setdebugtype (DebugType type)
 
 void Asm::In::errtostdout ()
 {
-	perr= & std::cout;
+	perr= & cout;
 }
 
 void Asm::In::setbase (unsigned int addr)
@@ -870,6 +758,44 @@ void Asm::In::addincludedir (const std::string & dirname)
 	if (c != '\\' && c != '/')
 		aux+= '/';
 	includepath.push_back (aux);
+}
+
+void Asm::In::addpredef (const std::string & predef)
+{
+	// Default value.
+	address value= 0xFFFF;
+
+	// Prepare the parsing of the argument.
+	Tokenizer trdef (predef, nocase);
+
+	// Get symbol name.
+	Token tr (trdef.gettoken () );
+	if (tr.type () != TypeIdentifier)
+		throw runtime_error ("Can't predefine invalid identifier");
+	std::string varname= tr.str ();
+
+	// Get the value, if any.
+	tr= trdef.gettoken ();
+	switch (tr.type () )
+	{
+	case TypeEqual:
+		tr= trdef.gettoken ();
+		if (tr.type () != TypeNumber)
+			throw runtime_error
+				("Invalid value for predefined symbol");
+		value= tr.num ();
+		tr= trdef.gettoken ();
+		if (tr.type () != TypeEndLine)
+			throw ("Invalid value for predefined symbol");
+		break;
+	case TypeEndLine:
+		break;
+	default:
+		throw runtime_error ("Syntax error in prdefined symbol");
+	}
+
+	//* pout << "Predefining: " << varname << "= " << value << endl;
+	setequorlabel (varname, value);
 }
 
 void Asm::In::openis (std::ifstream & is, const std::string & filename,
@@ -958,17 +884,9 @@ void Asm::In::parsevalue (bool required, Tokenizer & tz, address & result)
 		result= tok.num ();
 		break;
 	case TypeIdentifier:
-		#if 0
-		if (required)
-			result= getvalue (tok.str () );
-		else
-			result= getvalue0 (tok.str () );
-		#else
 		result= getvalue (tok.str (), required);
-		#endif
 		break;
 	case TypeDollar:
-		//result= current;
 		result= currentinstruction;
 		break;
 	case TypeLiteral:
@@ -989,6 +907,29 @@ void Asm::In::parsevalue (bool required, Tokenizer & tz, address & result)
 			} while (tok.type () != TypeEndLine);
 		}
 		break;
+	case TypeDEFINED:
+		tok= tz.gettoken ();
+		if (tok.type () != TypeIdentifier)
+			throw "Identifier expected";
+		{
+			const std::string & var= tok.str ();
+			checkautolocal (var);
+			vardefined_t::iterator it= vardefined.find (var);
+			if (it == vardefined.end () )
+			{
+				ASSERT (mapvar.find (var) == mapvar.end () );
+				result= addrFALSE;
+			}
+			else
+			{
+				ASSERT (mapvar.find (var) != mapvar.end () );
+				if (pass > 1 && it->second == DefinedPass1)
+					result= addrFALSE;
+				else
+					result= addrTRUE;
+			}
+		}
+		break;
 	default:
 		throw "Value Expected but '" + tok.str () + "' found";
 	}
@@ -1000,17 +941,10 @@ void Asm::In::parseopen (bool required, Tokenizer & tz, address & result)
 	if (tok.type () == TypeOpen)
 	{
 		parseorxor (required, tz, result);
-		#if 0
-		tok= tz.gettoken ();
-		if (tok.type () != TypeClose)
-			throw "Close expected";
-		#else
 		parseclose (tz);
-		#endif
 	}
 	else
 	{
-		//tz.putback (tok);
 		tz.ungettoken ();
 		parsevalue (required, tz, result);
 	}
@@ -1067,7 +1001,6 @@ void Asm::In::parsemuldiv (bool required, Tokenizer & tz, address & result)
 		tok= tz.gettoken ();
 		tt= tok.type ();
 	}
-	//tz.putback (tok);
 	tz.ungettoken ();
 }
 
@@ -1094,7 +1027,6 @@ void Asm::In::parseplusmin (bool required, Tokenizer & tz, address & result)
 		tok= tz.gettoken ();
 		tt= tok.type ();
 	}
-	//tz.putback (tok);
 	tz.ungettoken ();
 }
 
@@ -1134,7 +1066,6 @@ void Asm::In::parserelops (bool required, Tokenizer & tz, address & result)
 		tok= tz.gettoken ();
 		tt= tok.type ();
 	}
-	//tz.putback (tok);
 	tz.ungettoken ();
 }
 
@@ -1162,9 +1093,7 @@ void Asm::In::parsenot (bool required, Tokenizer & tz, address & result)
 	}
 	else
 	{
-		//tz.putback (tok);
 		tz.ungettoken ();
-		//parseplusmin (required, tz, result);
 		parserelops (required, tz, result);
 	}
 }
@@ -1182,7 +1111,6 @@ void Asm::In::parseand (bool required, Tokenizer & tz, address & result)
 		tok= tz.gettoken ();
 		tt= tok.type ();
 	}
-	//tz.putback (tok);
 	tz.ungettoken ();
 }
 
@@ -1209,14 +1137,12 @@ void Asm::In::parseorxor (bool required, Tokenizer & tz, address & result)
 		tok= tz.gettoken ();
 		tt= tok.type ();
 	}
-	//tz.putback (tok);
 	tz.ungettoken ();
 }
 
 address Asm::In::parseexpr (bool required, const Token & /* tok */,
 	Tokenizer & tz)
 {
-	//tz.putback (tok);
 	tz.ungettoken ();
 	address result;
 	parseorxor (required, tz, result);
@@ -1262,15 +1188,10 @@ void Asm::In::loadfile (const std::string & filename)
 {
 	// Load the file in memory.
 
-	// Changed this to introduce the -I option.
-	#if 0
-	std::ifstream file (filename.c_str () );
-	if (! file.is_open () )
-		throw "File not found";
-	#else
+	* pverb << "Loading file: " << filename << endl;
+
 	std::ifstream file;
 	openis (file, filename, std::ios::in);
-	#endif
 
 	vfileref.push_back (FileRef (filename) );
 	size_t filenum= vfileref.size () - 1;
@@ -1305,6 +1226,8 @@ void Asm::In::loadfile (const std::string & filename)
 			" of file " << filename << endl;
 		throw;
 	}
+
+	* pverb << "Finished loading file: " << filename << endl;
 }
 
 void Asm::In::getvalidline ()
@@ -1346,8 +1269,11 @@ void Asm::In::parseif (Tokenizer & tz)
 				++level;
 			else if (tt == TypeELSE)
 			{
-				++iflevel;
-				break;
+				if (level == 1)
+				{
+					++iflevel;
+					break;
+				}
 			}
 			else if (tt == TypeENDIF)
 			{
@@ -1437,7 +1363,6 @@ void Asm::In::parseline (Tokenizer & tz)
 
 			// Check needed to allow redefinition of macro.
 			tok= tz.gettoken ();
-			//tz.putback (tok);
 			tz.ungettoken ();
 			if (tok.type () == TypeMACRO)
 				parselabel (tz, name);
@@ -1485,11 +1410,6 @@ void Asm::In::parseline (Tokenizer & tz)
 			parsemacro (tz, name); 
 		}
 		break;
-	#if 0
-	case TypeREPT:
-		parseREPT (tz);
-		break;
-	#endif
 	default:
 		parsegeneric (tz, tok);
 	}
@@ -1500,7 +1420,7 @@ AutoLevel * Asm::In::enterautolocal ()
 	AutoLevel * pav;
 	if (localstack.empty () || ! localstack.top ()->is_auto () )
 	{
-		* perr << "Enter autolocal level" << endl;
+		* pout << "Enter autolocal level" << endl;
 		pav= new AutoLevel (* this);
 		localstack.push (pav);
 	}
@@ -1521,7 +1441,7 @@ void Asm::In::finishautolocal ()
 		{
 			if (autolocalmode)
 			{
-				* perr << "Exit autolocal level" << endl;
+				* pout << "Exit autolocal level" << endl;
 				localstack.pop ();
 			}
 			else
@@ -1542,8 +1462,27 @@ void Asm::In::checkautolocal (const std::string & varname)
 
 void Asm::In::dopass ()
 {
+	* pverb << "Entering pass " << pass << endl;
+
 	initlocal ();
 	mapmacro.clear ();
+
+	for (mapvar_t::iterator it= mapvar.begin (); it != mapvar.end (); )
+	{
+		const std::string name= it->first;
+		vardefined_t::iterator itdef= vardefined.find (name);
+		if (itdef == vardefined.end () )
+			throw logic_error ("Type of definition not found");
+
+		if (itdef->second == DefinedDEFL)
+		{
+			vardefined.erase (itdef);
+			mapvar.erase (it++);
+		}
+		else
+			++it;
+	}
+
 	current= base;
 	iflevel= 0;
 	for (currentline= 0; currentline < vline.size (); ++currentline)
@@ -1572,6 +1511,8 @@ void Asm::In::dopass ()
 		currentline= proc->getline ();
 		throw "Unbalanced PROC";
 	}
+
+	* pverb << "Pass " << pass << " finished" << endl;
 }
 
 void Asm::In::processfile (const std::string & filename)
@@ -1582,20 +1523,22 @@ void Asm::In::processfile (const std::string & filename)
 
 	try 
 	{
-		Nullostream nullout;
+		// Now use a class member.
+		//Nullostream nullout;
+
 		for (pass= 1; pass <= 2; ++pass)
 		{
 			if (pass == 1)
 			{
 				if (debugtype == DebugAll)
-					pout= & std::cout;
+					pout= & cout;
 				else
 					pout= & nullout;
 			}
 			else
 			{
 				if (debugtype != NoDebug)
-					pout= & std::cout;
+					pout= & cout;
 				else
 					pout= & nullout;
 			}
@@ -1604,13 +1547,12 @@ void Asm::In::processfile (const std::string & filename)
 		}
 
 		// Keep pout pointing to something valid.
-		pout= & std::cout;
+		pout= & cout;
 	}
 	catch (...)
 	{
 		if (currentline >= vlineinfo.size () )
 		{
-			//throw "Unexpected error after end of file";
 			* perr << "ERROR detected after end of file" << endl;
 			throw;
 		}
@@ -1628,12 +1570,7 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 	simple1byte_t::iterator it= simple1byte.find (t);
 	if (it != simple1byte.end () )
 	{
-		#if 0
-		if (tz.gettoken ().type () != TypeEndLine)
-			throw "End of line expected";
-		#else
 		checkendline (tz);
-		#endif
 		gencode (it->second);
 		* pout << hex2 (it->second) << '\t' <<
 			tok.str () << endl;
@@ -1642,12 +1579,7 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 	it= simpleED.find (t);
 	if (it != simpleED.end () )
 	{
-		#if 0
-		if (tz.gettoken ().type () != TypeEndLine)
-			throw "End of line expected";
-		#else
 		checkendline (tz);
-		#endif
 		gencode (0xED);
 		gencode (it->second);
 		* pout << "ED " << hex2 (it->second) << '\t' <<
@@ -1819,7 +1751,6 @@ void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 	case TypeDEFL:
 		throw "DEFL without label";
 	default:
-		//throw "Syntax error";
 		throw "Unexpected " + tok.str ();
 	}
 }
@@ -1863,21 +1794,23 @@ void Asm::In::parseEND (Tokenizer & tz)
 void Asm::In::parseLOCAL (Tokenizer & tz)
 {
 	if (autolocalmode)
-		throw "LOCAL directive not allowed in autolocal mode";
+		finishautolocal ();
+
 	LocalLevel * plocal= localstack.top ();
 	for (;;)
 	{
 		Token tok= tz.gettoken ();
 		if (tok.type () != TypeIdentifier)
-			//throw "Syntax error";
 			throw "Unexpected " + tok.str ();
+		if (autolocalmode && tok.str () [0] == AutoLocalPrefix)
+			throw "Invalid LOCAL name in autolocal mode";
+
 		plocal->add (tok.str () );
 		tok= tz.gettoken ();
 		TypeToken tt= tok.type ();
 		if (tt == TypeEndLine)
 			break;
 		if (tt != TypeComma)
-			//throw "Syntax error";
 			throw "Unexpected " + tok.str ();
 	}
 }
@@ -1885,7 +1818,8 @@ void Asm::In::parseLOCAL (Tokenizer & tz)
 void Asm::In::parsePROC (Tokenizer & tz)
 {
 	if (autolocalmode)
-		throw "PROC directive not allowed in autolocal mode";
+		finishautolocal ();
+
 	checkendline (tz);
 	ProcLevel * pproc= new ProcLevel (* this, currentline);
 	localstack.push (pproc);
@@ -1894,6 +1828,10 @@ void Asm::In::parsePROC (Tokenizer & tz)
 void Asm::In::parseENDP (Tokenizer & tz)
 {
 	checkendline (tz);
+
+	if (autolocalmode)
+		finishautolocal ();
+
 	if (localstack.empty () ||
 		dynamic_cast <ProcLevel *> (localstack.top () ) == NULL)
 	{
@@ -1932,6 +1870,8 @@ void Asm::In::setequorlabel (const std::string & name, address value)
 		break;
 	case DefinedDEFL:
 		throw name + redefinedDEFL;
+	case PreDefined:
+		throw logic_error ("Label already predefined");
 	case DefinedPass1:
 		if (pass == 1)
 			throw name + redefinedEQU;
@@ -1941,7 +1881,51 @@ void Asm::In::setequorlabel (const std::string & name, address value)
 		ASSERT (pass > 1);
 		throw name + redefinedEQU;
 	}
-	vardefined [name]= pass == 1 ? DefinedPass1 : DefinedPass2;
+	//vardefined [name]= pass == 1 ? DefinedPass1 : DefinedPass2;
+	Defined def;
+	switch (pass)
+	{
+	case 0:
+		def= PreDefined; break;
+	case 1:
+		def= DefinedPass1; break;
+	case 2:
+		def= DefinedPass2; break;
+	default:
+		throw logic_error ("Invalid value of pass");
+	}
+	vardefined [name]= def;
+	setvalue (name, value);
+}
+
+void Asm::In::setdefl (const std::string & name, address value)
+{
+	if (autolocalmode)
+	{
+		if (name [0] == AutoLocalPrefix)
+		{
+			AutoLevel *pav= enterautolocal ();
+			ASSERT (pav);
+			pav->add (name);
+		}
+		else
+			finishautolocal ();
+	}
+
+	switch (vardefined [name] )
+	{
+	case NoDefined:
+		// Fine in this case.
+		break;
+	case DefinedDEFL:
+		// Fine also.
+		break;
+	case PreDefined:
+	case DefinedPass1:
+	case DefinedPass2:
+		throw name + redefinedEQU;
+	}
+	vardefined [name]= DefinedDEFL;
 	setvalue (name, value);
 }
 
@@ -1970,6 +1954,7 @@ void Asm::In::parselabel (Tokenizer & tz, const std::string & name)
 			tok= tz.gettoken ();
 			address value= parseexpr (false, tok, tz);
 			checkendline (tz);
+			#if 0
 			switch (vardefined [name] )
 			{
 			case NoDefined:
@@ -1984,6 +1969,8 @@ void Asm::In::parselabel (Tokenizer & tz, const std::string & name)
 			}
 			vardefined [name]= DefinedDEFL;
 			setvalue (name, value);
+			#endif
+			setdefl (name, value);
 		}
 		break;
 	case TypeMACRO:
@@ -2005,6 +1992,14 @@ void Asm::In::parselabel (Tokenizer & tz, const std::string & name)
 void Asm::In::parsemacro (Tokenizer & tz, const std::string & name)
 {
 	* pout << "Defining MACRO " << name << endl;
+	ASSERT (! name.empty () );
+
+	if (autolocalmode)
+	{
+		finishautolocal ();
+		if (name [0] == AutoLocalPrefix)
+			throw "Invalid macro name in autolocal mode";
+	}
 
 	// Get parameter list.
 	std::vector <std::string> param;
@@ -2181,8 +2176,7 @@ bool Asm::In::parsebyteparam (Tokenizer & tz, TypeToken tt,
 			parsedesp (tz, desp);
 			break;
 		default:
-			//throw "Error por ahora";
-			// Backtrack the parsing to the begiining
+			// Backtrack the parsing to the beginning
 			// of the expression.
 			tz.ungettoken ();
 			return false;
@@ -2223,7 +2217,6 @@ void Asm::In::dobyteparam (Tokenizer & tz, byte codereg, byte codein)
 	}
 	else
 	{
-		//address addr= getvalue0 (tok);
 		address addr= parseexpr (false, tok, tz);
 		checkendline (tz);
 		gencode (codein);
@@ -2268,7 +2261,6 @@ void Asm::In::dobyteparamCB (Tokenizer & tz, byte codereg)
 void Asm::In::parseIM (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	//address v= getvalue (tok);
 	address v= parseexpr (true, tok, tz);
 	byte code;
 	switch (v)
@@ -2292,7 +2284,6 @@ void Asm::In::parseIM (Tokenizer & tz)
 void Asm::In::parseRST (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	//address v= getvalue (tok);
 	address v= parseexpr (true, tok, tz);
 	byte code;
 	switch (v)
@@ -2431,7 +2422,6 @@ void Asm::In::parseLDA (Tokenizer & tz)
 			break;
 		default:
 			{
-				//address addr= getvalue0 (tok);
 				address addr= parseexpr (false, tok, tz);
 				parseclose (tz);
 				gencode (0x3A);
@@ -2443,9 +2433,6 @@ void Asm::In::parseLDA (Tokenizer & tz)
 		}
 		break;
 	default:
-		//address value= getvalue (tok);
-		// Require a value in pass 1 seems to be an error.
-		//address value= parseexpr (true, tok, tz);
 		address value= parseexpr (false, tok, tz);
 		gencode (0x3E);
 		gencode (value & 0xFF);
@@ -2458,82 +2445,10 @@ void Asm::In::parseLDA (Tokenizer & tz)
 void Asm::In::parseLDsimple (Tokenizer & tz, unsigned short regcode,
 	byte prevprefix)
 {
-	#if 0
-	switch (regcode)
-	{
-	case regB:
-		code= 0x06;
-		break;
-	case regC:
-		code= 0x0E;
-		break;
-	case regD:
-		code= 0x16;
-		break;
-	case regE:
-		code= 0x1E;
-		break;
-	case regH:
-		code= 0x26;
-		break;
-	case regL:
-		code= 0x2E;
-		break;
-	case reg_HL_:
-		code= 0x36;
-		break;
-	default:
-		throw "Error por ahora";
-	}
-	#endif
-
 	parsecomma (tz);
 	Token tok= tz.gettoken ();
 
 	unsigned short reg2;
-	#if 0
-	switch (tok.type () )
-	{
-	case TypeA:
-		reg2= regA; break;
-	case TypeB:
-		reg2= regB; break;
-	case TypeC:
-		reg2= regC; break;
-	case TypeD:
-		reg2= regD; break;
-	case TypeE:
-		reg2= regE; break;
-	case TypeH:
-		reg2= regH; break;
-	case TypeL:
-		reg2= regL; break;
-	case TypeOpen:
-		tok= tz.gettoken ();
-		switch (tok.type () )
-		{
-		case TypeHL:
-			reg2= reg_HL_;
-			parseclose (tz);
-			break;
-		default:
-			throw "Error por ahora";
-		}
-		break;
-	default:
-		checkendline (tz);
-		// Por ahora
-		code= (regcode << 3) + 0x06;
-		//address value= getvalue (tok);
-		address value= parseexpr (true, tok, tz);
-
-		gencode (code);
-		gencode (value & 0xFF);
-		* pout << hex2 (code) << ' ' <<
-			hex2 (value & 0xFF) << endl;
-		return;
-	}
-	#else
 	byte prefix;
 	bool hasdesp;
 	byte desp;
@@ -2565,11 +2480,7 @@ void Asm::In::parseLDsimple (Tokenizer & tz, unsigned short regcode,
 	}
 	else
 	{
-		// Por ahora
 		byte code= (regcode << 3) + 0x06;
-		//address value= getvalue (tok);
-		// Require a value in pass 1 seems to be an error.
-		//address value= parseexpr (true, tok, tz);
 		address value= parseexpr (false, tok, tz);
 		checkendline (tz);
 		if (prevprefix)
@@ -2582,10 +2493,10 @@ void Asm::In::parseLDsimple (Tokenizer & tz, unsigned short regcode,
 		* pout << hex2 (code) << ' ' <<
 			hex2 (value & 0xFF) << endl;
 	}
-	#endif
 }
 
-void Asm::In::parseLDdouble (Tokenizer & tz, unsigned short regcode, byte prefix)
+void Asm::In::parseLDdouble (Tokenizer & tz,
+	unsigned short regcode, byte prefix)
 {
 	parsecomma (tz);
 	Token tok= tz.gettoken ();
@@ -2593,7 +2504,6 @@ void Asm::In::parseLDdouble (Tokenizer & tz, unsigned short regcode, byte prefix
 	if (tok.type () == TypeOpen)
 	{
 		tok= tz.gettoken ();
-		//address value= getvalue0 (tok);
 		address value= parseexpr (false, tok, tz);
 		parseclose (tz);
 		checkendline (tz);
@@ -2629,8 +2539,6 @@ void Asm::In::parseLDdouble (Tokenizer & tz, unsigned short regcode, byte prefix
 		return;
 	}
 
-	// Por ahora
-	//address value= getvalue0 (tok);
 	address value= parseexpr (false, tok, tz);
 	checkendline (tz);
 
@@ -2668,7 +2576,6 @@ void Asm::In::parseLDSP (Tokenizer & tz)
 	case TypeOpen:
 		{
 			tok= tz.gettoken ();
-			//address addr= getvalue0 (tok);
 			address addr= parseexpr (false, tok, tz);
 			parseclose (tz);
 			gencode (0xED);
@@ -2680,7 +2587,6 @@ void Asm::In::parseLDSP (Tokenizer & tz)
 		break;
 	default:
 		{
-			//address addr= getvalue0 (tok);
 			address addr= parseexpr (false, tok, tz);
 			gencode (0x31);
 			gencodeword (addr);
@@ -2697,7 +2603,6 @@ void Asm::In::parseLD (Tokenizer & tz)
 	switch (tok.type () )
 	{
 	case TypeA:
-		//parseLDsimple (tz, regA);
 		parseLDA (tz);
 		break;
 	case TypeB:
@@ -2771,13 +2676,7 @@ void Asm::In::parseLD (Tokenizer & tz)
 		case TypeBC:
 			parseclose (tz);
 			parsecomma (tz);
-			#if 0
-			tok= tz.gettoken ();
-			if (tok.type () != TypeA)
-				throw "Invalid operand";
-			#else
 			parseA (tz);
-			#endif
 			checkendline (tz);
 			gencode (0x02);
 			* pout << "02\tLD (BC), A" << endl;
@@ -2785,13 +2684,7 @@ void Asm::In::parseLD (Tokenizer & tz)
 		case TypeDE:
 			parseclose (tz);
 			parsecomma (tz);
-			#if 0
-			tok= tz.gettoken ();
-			if (tok.type () != TypeA)
-				throw "Invalid operand";
-			#else
 			parseA (tz);
-			#endif
 			checkendline (tz);
 			gencode (0x12);
 			* pout << "12\tLD (DE), A" << endl;
@@ -2828,7 +2721,6 @@ void Asm::In::parseLD (Tokenizer & tz)
 				}
 				else
 				{
-					//address addr= getvalue0 (tok);
 					address addr=
 						parseexpr (false, tok, tz);
 					checkendline (tz);
@@ -2871,7 +2763,6 @@ void Asm::In::parseLD (Tokenizer & tz)
 				}
 				else
 				{
-					//address addr= getvalue0 (tok);
 					address addr=
 						parseexpr (false, tok, tz);
 					checkendline (tz);
@@ -2889,7 +2780,6 @@ void Asm::In::parseLD (Tokenizer & tz)
 		default:
 			// LD (nn), ...
 			{
-				//address addr= getvalue0 (tok);
 				address addr= parseexpr (false, tok, tz);
 				parseclose (tz);
 				parsecomma (tz);
@@ -2947,128 +2837,17 @@ void Asm::In::parseLD (Tokenizer & tz)
 
 void Asm::In::parseCP (Tokenizer & tz)
 {
-	#if 0
-	unsigned short reg;
-	Token tok= tz.gettoken ();
-	byte prefix;
-	bool hasdesp;
-	byte desp;
-	if (parsebyteparam (tz, tok.type (), reg, prefix, hasdesp, desp) )
-	{
-		checkendline (tz);
-		if (prefix)
-		{
-			gencode (prefix);
-			* pout << hex2 (prefix) << ' ';
-		}
-		byte code= 0xB8 + reg;
-		gencode (code);
-		* pout << hex2 (code);
-		if (hasdesp)
-		{
-			gencode (desp);
-			* pout << ' ' << hex2 (desp);
-		}
-		* pout << endl;
-	}
-	else
-	{
-		//address addr= getvalue0 (tok);
-		address addr= parseexpr (false, tok, tz);
-		checkendline (tz);
-		gencode (0xFE);
-		byte param= static_cast <byte> (addr);
-		gencode (param);
-		* pout << "FE " << hex2 (param) <<
-			"\tCP nn" << endl;
-	}
-	#else
 	dobyteparam (tz, 0xB8, 0xFE);
-	#endif
 }
 
 void Asm::In::parseAND (Tokenizer & tz)
 {
-	#if 0
-	unsigned short reg;
-	Token tok= tz.gettoken ();
-	byte prefix;
-	bool hasdesp;
-	byte desp;
-	if (parsebyteparam (tz, tok.type (), reg, prefix, hasdesp, desp) )
-	{
-		checkendline (tz);
-		if (prefix)
-		{
-			gencode (prefix);
-			* pout << hex2 (prefix) << ' ';
-		}
-		byte code= 0xA0 + reg;
-		gencode (code);
-		* pout << hex2 (code);
-		if (hasdesp)
-		{
-			gencode (desp);
-			* pout << ' ' << hex2 (desp);
-		}
-		* pout << endl;
-	}
-	else
-	{
-		//address addr= getvalue0 (tok);
-		address addr= parseexpr (false, tok, tz);
-		checkendline (tz);
-		gencode (0xE6);
-		byte param= static_cast <byte> (addr);
-		gencode (param);
-		* pout << "E6 " << hex2 (param) <<
-			"\tAND n" << endl;
-	}
-	#else
 	dobyteparam (tz, 0xA0, 0xE6);
-	#endif
 }
 
 void Asm::In::parseOR (Tokenizer & tz)
 {
-	#if 0
-	unsigned short reg;
-	Token tok= tz.gettoken ();
-	byte prefix;
-	bool hasdesp;
-	byte desp;
-	if (parsebyteparam (tz, tok.type (), reg, prefix, hasdesp, desp) )
-	{
-		checkendline (tz);
-		if (prefix)
-		{
-			gencode (prefix);
-			* pout << hex2 (prefix) << ' ';
-		}
-		byte code= 0xB0 + reg;
-		gencode (code);
-		* pout << hex2 (code);
-		if (hasdesp)
-		{
-			gencode (desp);
-			* pout << ' ' << hex2 (desp);
-		}
-		* pout << endl;
-	}
-	else
-	{
-		//address addr= getvalue0 (tok);
-		address addr= parseexpr (false, tok, tz);
-		checkendline (tz);
-		gencode (0xF6);
-		byte param= static_cast <byte> (addr);
-		gencode (param);
-		* pout << "F6 " << hex2 (param) <<
-			"\tOR n" << endl;
-	}
-	#else
 	dobyteparam (tz, 0xB0, 0xF6);
-	#endif
 }
 
 void Asm::In::parseXOR (Tokenizer & tz)
@@ -3162,7 +2941,6 @@ void Asm::In::parseADDADCSBCHL (Tokenizer & tz, byte prefix, byte basecode)
 		gencode (0xED);
 		* pout << "ED ";
 	}
-	//byte code= (reg << 4) + (isADD ? 0x09 : 0x4A);
 	byte code= (reg << 4) + basecode;
 	gencode (code);
 	* pout << hex2 (code) << endl;
@@ -3170,11 +2948,7 @@ void Asm::In::parseADDADCSBCHL (Tokenizer & tz, byte prefix, byte basecode)
 
 void Asm::In::parseADD (Tokenizer & tz)
 {
-	//unsigned short reg;
 	Token tok= tz.gettoken ();
-	//byte prefix;
-	//bool hasdesp;
-	//byte desp;
 	switch (tok.type () )
 	{
 	case TypeA:
@@ -3192,40 +2966,7 @@ void Asm::In::parseADD (Tokenizer & tz)
 		throw "Invalid operand";
 	}
 	parsecomma (tz);
-	#if 0
-	tok= tz.gettoken ();
-	if (parsebyteparam (tz, tok.type (), reg, prefix, hasdesp, desp) )
-	{
-		checkendline (tz);
-		if (prefix)
-		{
-			gencode (prefix);
-			* pout << hex2 (prefix) << ' ';
-		}
-		byte code= 0x80 + reg;
-		gencode (code);
-		* pout << hex2 (code);
-		if (hasdesp)
-		{
-			gencode (desp);
-			* pout << ' ' << hex2 (desp);
-		}
-		* pout << endl;
-	}
-	else
-	{
-		//address addr= getvalue0 (tok);
-		address addr= parseexpr (false, tok, tz);
-		checkendline (tz);
-		gencode (0xC6);
-		byte param= static_cast <byte> (addr);
-		gencode (param);
-		* pout << "C6 " << hex2 (param) <<
-			"\tADD A, n" << endl;
-	}
-	#else
 	dobyteparam (tz, 0x80, 0xC6);
-	#endif
 }
 
 void Asm::In::parseADC (Tokenizer & tz)
@@ -3242,44 +2983,7 @@ void Asm::In::parseADC (Tokenizer & tz)
 		throw "Invalid param to ADC";
 	}
 	parsecomma (tz);
-	#if 0
-	tok= tz.gettoken ();
-	unsigned short reg;
-	byte prefix;
-	bool hasdesp;
-	byte desp;
-	if (parsebyteparam (tz, tok.type (), reg, prefix, hasdesp, desp) )
-	{
-		checkendline (tz);
-		if (prefix)
-		{
-			gencode (prefix);
-			* pout << hex2 (prefix) << ' ';
-		}
-		byte code= 0x88 + reg;
-		gencode (code);
-		* pout << hex2 (code);
-		if (hasdesp)
-		{
-			gencode (desp);
-			* pout << ' ' << hex2 (desp);
-		}
-		* pout << endl;
-	}
-	else
-	{
-		//address addr= getvalue0 (tok);
-		address addr= parseexpr (false, tok, tz);
-		checkendline (tz);
-		gencode (0xCE);
-		byte param= static_cast <byte> (addr);
-		gencode (param);
-		* pout << "CE " << hex2 (param) <<
-			"\tADC A, n" << endl;
-	}
-	#else
 	dobyteparam (tz, 0x88, 0xCE);
-	#endif
 }
 
 void Asm::In::parseSBC (Tokenizer & tz)
@@ -3288,49 +2992,8 @@ void Asm::In::parseSBC (Tokenizer & tz)
 	switch (tok.type () )
 	{
 	case TypeA:
-		#if 0
-		{
-			parsecomma (tz);
-			tok= tz.gettoken ();
-			unsigned short reg;
-			byte prefix;
-			bool hasdesp;
-			byte desp;
-			if (parsebyteparam (tz, tok.type (), reg, prefix,
-				hasdesp, desp) )
-			{
-				checkendline (tz);
-				if (prefix)
-				{
-					gencode (prefix);
-					* pout << hex2 (prefix) << ' ';
-				}
-				byte code= 0x98 + reg;
-				gencode (code);
-				* pout << hex2 (code);
-				if (hasdesp)
-				{
-					gencode (desp);
-					* pout << ' ' << hex2 (desp);
-				}
-				* pout << endl;
-			}
-			else
-			{
-				//address addr= getvalue0 (tok);
-				address addr= parseexpr (false, tok, tz);
-				checkendline (tz);
-				gencode (0xDE);
-				byte param= static_cast <byte> (addr);
-				gencode (param);
-				* pout << "DE " << hex2 (param) <<
-					"\tSBC A, n" << endl;
-			}
-		}
-		#else
 		parsecomma (tz);
 		dobyteparam (tz, 0x98, 0xDE);
-		#endif
 		break;
 	case TypeHL:
 		parseADDADCSBCHL (tz, 0, 0x42);
@@ -3340,7 +3003,7 @@ void Asm::In::parseSBC (Tokenizer & tz)
 	}
 }
 
-// Casos
+// Push and pop codes:
 //	push bc -> C5
 //	push de -> D5
 //	push hl -> E5
@@ -3360,7 +3023,6 @@ void Asm::In::parsePUSHPOP (Tokenizer & tz, bool isPUSH)
 	byte code= 0;
 	byte prefix= 0;
 
-	//* perr << "Tipo: " << tok.type () << endl;
 	switch (tok.type () )
 	{
 	case TypeBC:
@@ -3384,12 +3046,10 @@ void Asm::In::parsePUSHPOP (Tokenizer & tz, bool isPUSH)
 		prefix= prefixIY;
 		break;
 	default:
-		//throw "Error de sintaxis";
 		throw "Unexpected " + tok.str ();
 	}
 	checkendline (tz);
 
-	//* perr << "Code= " << int (code) << endl;
 	code<<= 4;
 	code+= isPUSH ? 0xC5 : 0xC1;
 
@@ -3402,19 +3062,7 @@ void Asm::In::parsePUSHPOP (Tokenizer & tz, bool isPUSH)
 	* pout << hex2 (code) << endl;
 }
 
-// Codigos JP y CALL
-
-// jp NN     -> C3
-// jp (hl)   -> E9
-// jp nz, NN -> C2
-// jp z,  NN -> CA
-// jp nc, NN -> D2
-// jp c, NN  -> DA
-// jp po, NN -> E2
-// jp pe, NN -> EA
-// jp p, NN  -> F2
-// jp m, NN  -> FA
-
+// CALL codes
 // call NN     -> CD
 // call nz, NN -> C4
 // call z, NN  -> CC
@@ -3429,21 +3077,6 @@ void Asm::In::parseCALL (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
 	address addr;
-	#if 0
-	switch (tok.type () )
-	{
-	case TypeNumber:
-		addr= tok.num ();
-		break;
-	case TypeIdentifier:
-		//addr= getvalue0 (tok.str () );
-		addr= parseexpr (false, tok, tz);
-		break;
-	default:
-		//throw "Error de sintaxis";
-		throw "Unexpected " + tok.str ();
-	}
-	#else
 	byte code;
 	switch (tok.type () )
 	{
@@ -3471,10 +3104,9 @@ void Asm::In::parseCALL (Tokenizer & tz)
 		parsecomma (tz);
 		tok= tz.gettoken ();
 	}
-	//addr= getvalue0 (tok);
 	addr= parseexpr (false, tok, tz);
 	checkendline (tz);
-	#endif
+
 	gencode (code);
 	gencodeword (addr);
 	* pout << hex2 (code) << ' ' << hex4 (addr) << endl;
@@ -3515,7 +3147,6 @@ void Asm::In::parseRET (Tokenizer & tz)
 		code= 0xF8;
 		break;
 	default:
-		//throw "Syntax error";
 		throw "Expected flag type but '" + tok.str () + "'found";
 	}
 	if (code != 0xC9)
@@ -3523,6 +3154,18 @@ void Asm::In::parseRET (Tokenizer & tz)
 	gencode (code);
 	* pout << hex2 (code) << "\tRET" << endl;
 }
+
+// JP codes
+// jp NN     -> C3
+// jp (hl)   -> E9
+// jp nz, NN -> C2
+// jp z,  NN -> CA
+// jp nc, NN -> D2
+// jp c, NN  -> DA
+// jp po, NN -> E2
+// jp pe, NN -> EA
+// jp p, NN  -> F2
+// jp m, NN  -> FA
 
 void Asm::In::parseJP (Tokenizer & tz)
 {
@@ -3587,13 +3230,7 @@ void Asm::In::parseJP (Tokenizer & tz)
 	}
 	if (code != 0xC3)
 	{
-		#if 0
-		tok= tz.gettoken ();
-		if (tok.type () != TypeComma)
-			throw "Esperada coma";
-		#else
 		parsecomma (tz);
-		#endif
 		tok= tz.gettoken ();
 	}
 
@@ -3604,11 +3241,9 @@ void Asm::In::parseJP (Tokenizer & tz)
 		addr= tok.num ();
 		break;
 	case TypeIdentifier:
-		//addr= getvalue0 (tok.str () );
 		addr= parseexpr (false, tok, tz);
 		break;
 	default:
-		//throw "Error de sintaxis";
 		throw "Unexpected " + tok.str ();
 	}
 	checkendline (tz);
@@ -3641,36 +3276,11 @@ void Asm::In::parseJR (Tokenizer & tz)
 	}
 	if (code != 0x18)
 	{
-		#if 0
-		tok= tz.gettoken ();
-		if (tok.type () != TypeComma)
-			throw "Esperada coma";
-		#else
 		parsecomma (tz);
-		#endif
 		tok= tz.gettoken ();
 	}
-	//bool defined= true;
-	#if 0
-	address addr= 0;
-	switch (tok.type () )
-	{
-	case TypeNumber:
-		addr= tok.num ();
-		break;
-	case TypeIdentifier:
-		//addr= getvalue0 (tok.str () );
-		addr= parseexpr (false, tok, tz);
-		break;
-	default:
-		//throw "Error de sintaxis";
-		throw "Unexpected " + tok.str ();
-	}
-	#else
 	address addr= parseexpr (false, tok, tz);
-	#endif
 	int dif= 0;
-	//if (defined)
 	if (pass >= 2)
 	{
 		dif= addr - (current + 2);
@@ -3692,34 +3302,8 @@ void Asm::In::parseJR (Tokenizer & tz)
 void Asm::In::parseDJNZ (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	//bool defined= true;
-	#if 0
-	address addr= 0;
-	switch (tok.type () )
-	{
-	case TypeNumber:
-		addr= tok.num ();
-		break;
-	case TypeIdentifier:
-		#if 0
-		defined= valuedefined (tok.str () );
-		if (defined)
-			addr= getvalue (tok.str () );
-		else
-			throw "Forward JR unimplemnted yet";
-		#else
-		addr= getvalue0 (tok.str () );
-		#endif
-		break;
-	default:
-		//throw "Error de sintaxis";
-		throw "Unexpected " + tok.str ();
-	}
-	#else
 	address addr= parseexpr (false, tok, tz);
-	#endif
 	int dif= 0;
-	//if (defined)
 	if (pass >= 2)
 	{
 		dif= addr - (current + 2);
@@ -3927,7 +3511,6 @@ void Asm::In::parseIN (Tokenizer & tz)
 		}
 		else
 		{
-			//address addr= getvalue0 (tok);
 			address addr= parseexpr (false, tok, tz);
 			byte b= static_cast <byte> (addr);
 			gencode (0xDB);
@@ -3957,7 +3540,6 @@ void Asm::In::parseOUT (Tokenizer & tz)
 	Token tok= tz.gettoken ();
 	if (tok.type () != TypeC)
 	{
-		//address addr= getvalue0 (tok);
 		address addr= parseexpr (false, tok, tz);
 		byte b= static_cast <byte> (addr);
 		parseclose (tz);
@@ -4002,7 +3584,6 @@ void Asm::In::parseOUT (Tokenizer & tz)
 void Asm::In::dobit (Tokenizer & tz, byte basecode)
 {
 	Token tok= tz.gettoken ();
-	//address addr= getvalue0 (tok);
 	address addr= parseexpr (false, tok, tz);
 	if (addr > 7)
 		throw "Bit position out of range";
@@ -4032,12 +3613,6 @@ void Asm::In::parseDEFB (Tokenizer & tz)
 		Token tok= tz.gettoken ();
 		switch (tok.type () )
 		{
-		//case TypeNumber:
-		//	gencode (tok.num () & 0xFF);
-		//	break;
-		//case TypeIdentifier:
-		//	gencode (getvalue0 (tok.str () ) & 0xFF);
-		//	break;
 		case TypeLiteral:
 			{
 				const std::string & str= tok.str ();
@@ -4071,13 +3646,11 @@ void Asm::In::parseDEFW (Tokenizer & tz)
 	for (;;)
 	{
 		Token tok= tz.gettoken ();
-		//gencodeword (getvalue0 (tok) );
 		gencodeword (parseexpr (false, tok, tz) );
 		tok= tz.gettoken ();
 		if (tok.type () == TypeEndLine)
 			break;
 		if (tok.type () != TypeComma)
-			//throw "Error de sintaxis";
 			throw "Unexpected " + tok.str ();
 	}
 }
@@ -4085,7 +3658,6 @@ void Asm::In::parseDEFW (Tokenizer & tz)
 void Asm::In::parseDEFS (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
-	//address addr= getvalue (tok);
 	address addr= parseexpr (true, tok, tz);
 	byte value= 0;
 	tok= tz.gettoken ();
@@ -4097,14 +3669,12 @@ void Asm::In::parseDEFS (Tokenizer & tz)
 	case TypeComma:
 		tok= tz.gettoken ();
 		{
-			//address addr= getvalue0 (tok);
 			address addr= parseexpr (false, tok, tz);
 			checkendline (tz);
 			value= static_cast <byte> (addr);
 		}
 		break;
 	default:
-		//throw "Syntax error";
 		throw "Unexpected " + tok.str ();
 	}
 	for (address i= 0; i < addr; ++i)
@@ -4117,15 +3687,8 @@ void Asm::In::parseINCBIN (Tokenizer & tz)
 	checkendline (tz);
 	* pout << "\tINCBIN " << includefile << endl;
 
-	// Changed this to introduce the -I option.
-	#if 0
-	std::ifstream f (includefile.c_str (), std::ios::in | std::ios::binary);
-	if (! f.is_open () )
-		throw "File not found";
-	#else
 	std::ifstream f;
 	openis (f, includefile, std::ios::in | std::ios::binary);
-	#endif
 
 	char buffer [1024];
 	for (;;)
@@ -4143,6 +3706,10 @@ void Asm::In::parseINCBIN (Tokenizer & tz)
 		}
 	}
 }
+
+//*********************************************************
+//		Macro expansions.
+//*********************************************************
 
 namespace {
 
@@ -4173,9 +3740,6 @@ void getmacroparams (MacroParamList & params, Tokenizer & tz)
 Tokenizer substmacroparams (MacroBase & macro, Tokenizer & tz,
 	const MacroParamList & params)
 {
-	//if (params.empty () )
-	//	return tz;
-
 	Tokenizer r (tz.getnocase () );
 	for (;;)
 	{
@@ -4240,31 +3804,50 @@ bool Asm::In::gotoENDM ()
 	return true;
 }
 
+// class MacroFrame: create the MacroLevel and store some state info
+// and restore things on destruction.
+
+class Asm::In::MacroFrame {
+public:
+	MacroFrame (Asm::In & asmin);
+	~MacroFrame ();
+	size_t getexpline () const;
+private:
+	Asm::In & asmin;
+	const size_t expandline;
+	const size_t previflevel;
+};
+
+Asm::In::MacroFrame::MacroFrame (Asm::In & asmin) :
+	asmin (asmin),
+	expandline (asmin.currentline),
+	previflevel (asmin.iflevel)
+{
+	MacroLevel * pproc= new MacroLevel (asmin);
+	asmin.localstack.push (pproc);
+}
+
+Asm::In::MacroFrame::~MacroFrame ()
+{
+	// Clear the local frame, including unclosed PROCs and autolocals.
+	while (dynamic_cast <MacroLevel *> (asmin.localstack.top () ) == NULL)
+		asmin.localstack.pop ();
+	asmin.localstack.pop ();
+
+	// IF whitout ENDIF inside a macro are valid.
+	asmin.iflevel= previflevel;
+}
+
+size_t Asm::In::MacroFrame::getexpline () const
+{
+	return expandline;
+}
+
 void Asm::In::expandMACRO (Macro macro, Tokenizer & tz)
 {
 	// Get parameters.
 	MacroParamList params;
-	#if 0
-	for (;;)
-	{
-		Token tok= tz.gettoken ();
-		TypeToken tt= tok.type ();
-		if (tt == TypeEndLine)
-			break;
-		MacroParam param;
-		while (tt != TypeEndLine && tt != TypeComma)
-		{
-			param.push_back (tok);
-			tok= tz.gettoken ();
-			tt= tok.type ();
-		}
-		params.push_back (param);
-		if (tt == TypeEndLine)
-			break;
-	}
-	#else
 	getmacroparams (params, tz);
-	#endif
 	checkendline (tz); // Redundant, for debugging.
 
 	for (size_t i= 0; i < params.size (); ++i)
@@ -4277,12 +3860,9 @@ void Asm::In::expandMACRO (Macro macro, Tokenizer & tz)
 	}
 
 	// Set the local frame.
-	MacroLevel * pproc= new MacroLevel (* this);
-	localstack.push (pproc);
+	MacroFrame mframe (* this);
 
 	// Do the expansion,
-	size_t expandline= currentline;
-	size_t previflevel= iflevel;
 	try
 	{
 		for (currentline= macro.getline () + 1;
@@ -4298,7 +3878,6 @@ void Asm::In::expandMACRO (Macro macro, Tokenizer & tz)
 			TypeToken tt= tok.type ();
 			if (tt == TypeENDM || tt == TypeEXITM)
 				break;
-			//tz.putback (tok);
 			tz.ungettoken ();
 			Tokenizer tzsubst
 				(substmacroparams (macro, tz, params) );
@@ -4310,22 +3889,14 @@ void Asm::In::expandMACRO (Macro macro, Tokenizer & tz)
 	}
 	catch (...)
 	{
-		LineInfo & linf= vlineinfo [expandline];
+		LineInfo & linf= vlineinfo [mframe.getexpline () ];
 		* perr << "ERROR expanding macro on line " << linf.linenum <<
 			" of file " << vfileref [linf.filenum].filename <<
 			endl;
 		throw;
 	}
 
-	// Clear the local frame, including unclosed PROCs.
-	while (dynamic_cast <MacroLevel *> (localstack.top () ) == NULL)
-		localstack.pop ();
-	localstack.pop ();
-
-	// IF whitout ENDIF inside a macro are valid.
-	iflevel= previflevel;
-
-	currentline= expandline;
+	currentline= mframe.getexpline ();
 }
 
 void Asm::In::parseREPT (Tokenizer & tz)
@@ -4337,15 +3908,12 @@ void Asm::In::parseREPT (Tokenizer & tz)
 	* pout << "\tREPT " << numrep << endl;
 	
 	// Set the local frame.
-	MacroLevel * pproc= new MacroLevel (* this);
-	localstack.push (pproc);
-	size_t initline= currentline;
-	size_t previflevel= iflevel;
+	MacroFrame mframe (* this);
 
 	for (address i= 0; i < numrep; ++i)
 	{
 		bool exited= false;
-		for (currentline= initline + 1;
+		for (currentline= mframe.getexpline () + 1;
 			currentline < vline.size ();
 			++currentline)
 		{
@@ -4369,26 +3937,18 @@ void Asm::In::parseREPT (Tokenizer & tz)
 				exited= true;
 				break;
 			}
-			//tz.putback (tok);
 			tz.ungettoken ();
 			* pout << tz << endl;
 			parseline (tz);
 		}
 		if (currentline >= vline.size () )
 		{
-			currentline= initline;
+			currentline= mframe.getexpline ();
 			throw "REPT without ENDM";
 		}
 		if (exited)
 			break;
 	}
-	// Clear the local frame, including unclosed PROCs.
-	while (dynamic_cast <MacroLevel *> (localstack.top () ) == NULL)
-		localstack.pop ();
-	localstack.pop ();
-
-	// IF whitout ENDIF inside a macro are valid.
-	iflevel= previflevel;	
 }
 
 void Asm::In::parseIRP (Tokenizer & tz)
@@ -4411,18 +3971,14 @@ void Asm::In::parseIRP (Tokenizer & tz)
 	* pout << "IRP" << endl;
 
 	// Set the local frame.
-	MacroLevel * pproc= new MacroLevel (* this);
-	localstack.push (pproc);
-
-	size_t initline= currentline;
-	size_t previflevel= iflevel;
+	MacroFrame mframe (* this);
 
 	MacroParamList actualparam (1);
 	for (size_t irpn= 0; irpn < params.size (); ++irpn)
 	{
 		bool exited= false;
 		actualparam [0]= params [irpn];
-		for (currentline= initline + 1;
+		for (currentline= mframe.getexpline () + 1;
 			currentline < vline.size ();
 			++currentline)
 		{
@@ -4446,7 +4002,6 @@ void Asm::In::parseIRP (Tokenizer & tz)
 				exited= true;
 				break;
 			}
-			//tz.putback (tok);
 			tz.ungettoken ();
 			Tokenizer tzsubst (substmacroparams
 				(macroirp, tz, actualparam) );
@@ -4456,21 +4011,17 @@ void Asm::In::parseIRP (Tokenizer & tz)
 		
 		if (currentline >= vline.size () )
 		{
-			currentline= initline;
+			currentline= mframe.getexpline ();
 			throw "IRP without ENDM";
 		}
 		if (exited)
 			break;
 	}
-
-	// Clear the local frame, including unclosed PROCs.
-	while (dynamic_cast <MacroLevel *> (localstack.top () ) == NULL)
-		localstack.pop ();
-	localstack.pop ();
-
-	// IF whitout ENDIF inside a macro are valid.
-	iflevel= previflevel;	
 }
+
+//*********************************************************
+//		Object file generation.
+//*********************************************************
 
 void Asm::In::emitobject (std::ostream & out)
 {
@@ -4583,8 +4134,6 @@ void Asm::In::emittap (std::ostream & out, const std::string & filename)
 	headblock2 [2]= 0xFF; // Flag: data block.
 	// Compute the checksum.
 	check= 0xFF; // Flag byte included.
-	// BUG FIX.
-	//for (int i= minused; i < static_cast <int> (maxused) + codesize; ++i)
 	for (int i= minused; i <= static_cast <int> (maxused); ++i)
 		check^= mem [i];
 
@@ -4908,6 +4457,10 @@ void Asm::In::emitprl (std::ostream & out, Asm & asmmainoff)
 		throw "Error writing";
 }
 
+//*********************************************************
+//		Symbol table generation.
+//*********************************************************
+
 void Asm::In::dumppublic (std::ostream & out)
 {
 	for (setpublic_t::iterator pit= setpublic.begin ();
@@ -4956,6 +4509,11 @@ Asm::~Asm ()
 	delete pin;
 }
 
+void Asm::verbose ()
+{
+	pin->verbose ();
+}
+
 void Asm::setdebugtype (DebugType type)
 {
 	pin->setdebugtype (type);
@@ -4984,6 +4542,11 @@ void Asm::autolocal ()
 void Asm::addincludedir (const std::string & dirname)
 {
 	pin->addincludedir (dirname);
+}
+
+void Asm::addpredef (const std::string & predef)
+{
+	pin->addpredef (predef);
 }
 
 void Asm::processfile (const std::string & filename)

@@ -1,5 +1,5 @@
 // asm.h
-// Revision 27-oct-2004
+// Revision 7-nov-2004
 
 #include <iostream>
 #include <string>
@@ -19,6 +19,7 @@ public:
 
 	~Asm ();
 
+	void verbose ();
 	enum DebugType { NoDebug, DebugSecondPass, DebugAll };
 	DebugType debugtype;
 	void setdebugtype (DebugType type);
@@ -26,7 +27,9 @@ public:
 	void setbase (unsigned int addr);
 	void caseinsensitive ();
 	void autolocal ();
+
 	void addincludedir (const std::string & dirname);
+	void addpredef (const std::string & predef);
 
 	void processfile (const std::string & filename);
 	void emitobject (std::ostream & out);

@@ -1,5 +1,5 @@
 // token.h
-// Revision 27-oct-2004
+// Revision 6-nov-2004
 
 #include <string>
 #include <sstream>
@@ -57,6 +57,7 @@ enum TypeToken {
 	TypeGE,
 	TypeNE,
 	TypeNUL,
+	TypeDEFINED,
 
 	// Directives
 	TypeDEFB,

@@ -17,7 +17,8 @@ pasmo.o: pasmo.cpp asm.h
 	g++ $(CPPFLAGS) -c pasmo.cpp
 
 tgz:
-	tar czf pasmo.tgz Makefile *.cpp *.h *.asm README NEWS
+	tar czf pasmo.tgz Makefile *.cpp *.h *.asm \
+		README NEWS pasmodoc.html
 
 strip: pasmo
 	strip pasmo

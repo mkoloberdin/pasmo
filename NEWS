@@ -1,6 +1,21 @@
+	Version 0.4.0
+
+Debug messages for autolocal blocks where showed even when
+no using debug options, fixed.
+
+PROC and LOCAL now can be used in autolocal mode.
+
+-v, -E and --equ command line options.
+
+DEFINED operator.
+
+Corrected bug in ENDIF inside nested IF.
+
+
 	Version 0.3.7
 
 Added --alocal option for autolocal mode.
+
 
 	Version 0.3.6
 
@@ -10,17 +25,21 @@ Bug in tap checksum code fixed.
 
 Added --nocase option.
 
+
 	Version 0.3.5
 
 Command line option -err to send error messages to standard output.
+
 
 	Version 0.3.4
 
 Undocumented instructions SLL.
 
+
 	Version 0.3.3
 
 Some undocumented Z80 instructions are now accepted. See undoc.asm.
+
 
 	Version 0.3.2
 
@@ -34,6 +53,7 @@ The '%' is now an operator (same as MOD keyword).
 Now an expression that begins with parenthesis is accepeted
 in some situations where a "(register)" specification is
 possible that gives error in previous versions.
+
 
 	Version 0.3.1
 
