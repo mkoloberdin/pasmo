@@ -1,0 +1,155 @@
+
+	See english version below.
+
+
+
+	ESPAÑOL.
+
+
+	Pasmo version preliminar.
+	(C) 2004 Julián Albo
+	Utilización y distribución permitida bajo la licencia GPL.
+
+	Para compilar hacer: make
+
+	Para instalar: copiar el ejecutable pasmo a algún directorio del PATH.
+
+	Documentación: no hay, para ver la sintaxis aceptada mirar los .asm
+	incluidos como ejemplo.
+	
+	Para ensamblar:
+		pasmo [opciones] fichero.asm fichero.bin [fichero.simbolos]
+
+	Opciones:
+
+		-d         -->	Mostrar información de depuración
+				durante el ensamblado.
+
+		-1         -->	Mostrar información de depuración
+				durante el ensamblado, también en
+				el primer paso.
+
+		-I         -->	Añadir directorio a la lista de
+				directorios en los que se buscarán
+				ficheros para INCLUDE e INCBIN.
+
+		--hex      -->	Generar el fichero objeto en formato
+				Intel HEX.
+
+		--prl      -->	Generar el fichero objeto en formato
+				PRL. Adecuado para RSX de CP/M Plus.
+
+		--plus3dos -->	Generar el fichero objeto con cabecera
+				PLUS3DOS (Spectrum disco).
+
+		--tap      -->	Generar un fichero .tap para emuladores
+				de Spectrum (imagen de cinta).
+
+		--tapbas   -->	Igual que que la opción --tap pero
+				añadiendo un cargador Basic.
+
+		--amsdos   -->	Generar el fichero objeto con cabecera
+				Amsdos (Amstrad CPC disco).
+
+		--msx      -->	Generar el fichero objeto con cabecera
+				para usarse con BLOAD en MSX Basic.
+
+		--public   -->	El listado de símbolos incluirá sólo los
+				declarados PUBLIC.
+
+		--name     -->	Nombre para la cabecera en los formatos
+				que lo usan (si no se especifica se usa
+				el nombre del fichero objeto).
+
+		--err      -->	Dirige los mensajes de error a la salida
+				estándar en vez de a la salida de error
+				(excepto los errores en las opciones).
+
+		--nocase   -->	Hace que los identificadores no distingan
+				mayúsculas de minúsculas.
+
+
+	Si ninguna opción indica lo contrario, el formato del código objeto
+generado es binario sin cabecera.
+
+	La información de depuración va a la salida estándar, los errores
+a la salida de error.
+
+
+Comentarios y críticas a: ninsesabe@arrakis.es
+
+
+		*		*		*
+
+
+
+	ENGLISH.
+
+
+	Pasmo, preliminary version.
+	(C) 2004 Julián Albo
+	Use and distribution allowed under the terms of the GPL license.
+
+	To compile do: make
+
+	To install: copy the pasmo executable to some directory in the PATH.
+
+	Documentation: there is none, the syntax accepted can be seen in the
+	.asm included as examples.
+
+	To assemble:
+		pasmo [options] file.asm file.bin [file.symbol]
+
+	Options:
+
+		-d         -->	Show debug info during assembly.
+
+		-1         -->	Show debug info during assembly,
+				also in first pass.
+
+		-I         -->	Add directory to the list for
+				searching files in INCLUDE and INCBIN.
+
+		--hex      -->	Generate the object file in Intel HEX
+				format.
+
+		--prl      -->	Generate the object file in the PRL
+				format. Useful for CP/M Plus RSX.
+
+		--plus3dos -->	Generate the object file with PLUS3DOS
+				header (Spectrum disk).
+
+		--tap      -->	Generate a .tap file for Spectrum
+				emulators (tape image).
+
+		--tapbas   -->	Same as --tap option but adding a
+				Basic loader.
+
+		--amsdos   -->	Generate the object file with Amsdos
+				header (Amstrad CPC disk).
+
+		--msx      -->	Generate the object file with header
+				for use with BLOAD in MSX Basic.
+
+		--public   -->	The symbol table listing will include
+				only symbols declared as PUBLIC.
+
+		--name     -->	Name for the header in the formats that
+				use it. If unspecified the object file
+				name will be used.
+
+		--err      -->	Direct error messages to standard ouptut
+				instead of error output (except for errors
+				in options).
+
+		--nocase   -->	Make identifiers case insensitive.
+
+
+	If no options specify another, the object code format is binary
+without headers.
+
+	Debug info goes to standard output, error messages to error
+output.
+
+
+Comments and criticisms to: ninsesabe@arrakis.es

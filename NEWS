@@ -1,0 +1,106 @@
+	Version 0.3.6
+
+Added -I option.
+
+Bug in tap checksum code fixed.
+
+Added --nocase option.
+
+	Version 0.3.5
+
+Command line option -err to send error messages to standard output.
+
+	Version 0.3.4
+
+Undocumented instructions SLL.
+
+	Version 0.3.3
+
+Some undocumented Z80 instructions are now accepted. See undoc.asm.
+
+	Version 0.3.2
+
+Some error messages are now more clear.
+
+Bug $ evaluated to the current item position and not the beginning of
+the current instruction or directive, corrected.
+
+The '%' is now an operator (same as MOD keyword).
+
+Now an expression that begins with parenthesis is accepeted
+in some situations where a "(register)" specification is
+possible that gives error in previous versions.
+
+	Version 0.3.1
+
+New output format --tapbas
+
+The '*' and '/' tokens were not processed, fixed.
+
+
+	Version 0.3.0
+
+Dependencies corrected.
+
+Numbers with & prefix.
+
+Corrected bug in LD A and LD simple.
+
+DEFL, MACRO, REPT, IRP, ENDM and EXITM directives.
+
+Error "Unbalanced PROC" now show the line of the PROC not closed.
+
+NUL operator.
+
+C style strings more complete.
+
+
+	Version 0.2.4
+
+LOCAL, PROC and ENDP directives. See local.asm for sample.
+
+
+	Version 0.2.3
+
+Added output format MSX.
+
+Line number at the beginning of line is now admitted.
+
+Operators EQ, LT, LE, GT, GE and NE.
+
+'@' and '.' now can be used in identifiers.
+
+
+	Version 0.2.2
+
+Debug output control.
+
+
+	Version 0.2.1
+
+Line number of error was incorrectly showed, corrected.
+
+INCBIN directive.
+
+Decimal numeric literals greater than 65535 now are truncated instead of
+rejected.
+
+Binary numbers prefixed with %.
+
+File names now can be quoted with single or double quotes.
+
+
+	Version 0.2.0
+
+Added the object format .tap and the --name option.
+
+
+	Version 0.1.1
+
+The offset in instructions on (ix + offset) or (iy + offset) now can
+also be (ix - offset) or (iy - offset).
+
+
+	Version 0.1.0
+
+Added code generation in PRL format for use in CP/M Plus RSX.
