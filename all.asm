@@ -300,11 +300,11 @@ l1	djnz l1
 
 ;	JR
 
-l2	jr c, l2
-l3	jr nc, l3
-l4	jr nz, l4
-l5	jr z, l5
-l6	jr l6
+	jr c, $ + 22h
+	jr nc, $ + 22h
+	jr nz, $ + 22h
+	jr z, $ + 22h
+	jr $ + 22h
 
 ;	LD
 

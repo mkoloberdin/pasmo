@@ -1,5 +1,5 @@
 // asm.cpp
-// Revision 7-apr-2004
+// Revision 27-oct-2004
 
 #include "asm.h"
 #include "token.h"
@@ -17,11 +17,14 @@ using std::endl;
 #include <stack>
 #include <memory>
 #include <iterator>
+#include <stdexcept>
 
 #include <ctype.h>
 
 #include <assert.h>
 #define ASSERT assert
+
+using std::logic_error;
 
 //*********************************************************
 //		Auxiliary functions and constants.
@@ -34,6 +37,8 @@ const address addrFALSE= 0;
 
 const byte prefixIX= 0xDD;
 const byte prefixIY= 0xFD;
+
+const char AutoLocalPrefix= '_';
 
 #if 0
 
@@ -301,7 +306,60 @@ public:
 } // namespace
 
 //*********************************************************
-//			class Asm::In
+//		Local classes declarations.
+//*********************************************************
+
+namespace {
+
+typedef std::map <std::string, address> mapvar_t;
+
+class LocalLevel {
+public:
+	LocalLevel (Asm::In & asmin);
+	virtual ~LocalLevel ();
+	virtual bool is_auto () const;
+	void add (const std::string & var);
+private:
+	Asm::In & asmin;
+	mapvar_t saved;
+	std::map <std::string, std::string> globalized;
+};
+
+class AutoLevel : public LocalLevel {
+public:
+	AutoLevel (Asm::In & asmin);
+	bool is_auto () const;
+};
+
+class ProcLevel : public LocalLevel {
+public:
+	ProcLevel (Asm::In & asmin, size_t line);
+	size_t getline () const;
+private:
+	size_t line;
+};
+
+class MacroLevel : public LocalLevel {
+public:
+	MacroLevel (Asm::In & asmin);
+};
+
+class LocalStack {
+public:
+	~LocalStack ();
+	bool empty () const;
+	void push (LocalLevel * level);
+	LocalLevel * top ();
+	void pop ();
+private:
+	typedef std::stack <LocalLevel *> st_t;
+	st_t st;
+};
+
+} // namespace
+
+//*********************************************************
+//		class Asm::In declaration
 //*********************************************************
 
 class Asm::In {
@@ -318,6 +376,7 @@ public:
 	void errtostdout ();
 	void setbase (unsigned int addr);
 	void caseinsensitive ();
+	void autolocal ();
 	void addincludedir (const std::string & dirname);
 
 	void processfile (const std::string & filename);
@@ -425,6 +484,7 @@ private:
 	void parseENDP (Tokenizer & tz);
 
 	bool nocase;
+	bool autolocalmode;
 	DebugType debugtype;
 	byte mem [65536];
 	address base;
@@ -438,7 +498,6 @@ private:
 
 	// ********** Variables ************
 
-	typedef std::map <std::string, address> mapvar_t;
 	mapvar_t mapvar;
 	typedef std::set <std::string> setpublic_t;
 	setpublic_t setpublic;
@@ -474,13 +533,15 @@ private:
 
 	// ********* Local **********
 
-	class LocalLevel;
+	//class LocalLevel;
 	friend class LocalLevel;
 
 	std::vector <address> localvalue;
 	size_t localcount;
 
 	void initlocal () { localcount= 0; }
+
+	#if 0
 
 	class LocalLevel {
 	public:
@@ -582,7 +643,14 @@ private:
 		typedef std::stack <LocalLevel *> st_t;
 		st_t st;
 	};
+
+	#endif
+
 	LocalStack localstack;
+
+	AutoLevel * enterautolocal ();
+	void finishautolocal ();
+	void checkautolocal (const std::string & varname);
 
 	// ********* Macro **********
 
@@ -607,8 +675,128 @@ private:
 	std::vector <std::string> includepath;
 };
 
+//*********************************************************
+//		Local classes definitions.
+//*********************************************************
+
+namespace {
+
+LocalLevel::LocalLevel (Asm::In & asmin) :
+	asmin (asmin)
+{ }
+
+LocalLevel::~LocalLevel ()
+{
+	for (mapvar_t::iterator it= saved.begin ();
+		it != saved.end ();
+		++it)
+	{
+		const std::string & name=
+			globalized [it->first];
+		asmin.mapvar [name]=
+			asmin.mapvar [it->first];
+		asmin.mapvar [it->first]= it->second;
+		std::swap (asmin.vardefined [it->first],
+			asmin.vardefined [name] );
+	}
+}
+
+bool LocalLevel::is_auto () const
+{
+	return false;
+}
+
+void LocalLevel::add (const std::string & var)
+{
+	// Ignore redeclarations as LOCAL
+	// of the same identifier.
+	if (saved.find (var) != saved.end () )
+		return;
+
+	saved [var]= asmin.mapvar [var];
+	const std::string name= localname (asmin.localcount);
+	globalized [var]= name;
+	std::swap (asmin.vardefined [var],
+		asmin.vardefined [name] );
+	++asmin.localcount;
+	if (asmin.pass == 1)
+	{
+		asmin.localvalue.push_back (0);
+		ASSERT (asmin.localcount ==
+			asmin.localvalue.size () );
+	}
+	else
+	{
+		ASSERT (asmin.localcount <=
+			asmin.localvalue.size () );
+		asmin.mapvar [var]=
+			asmin.mapvar [name];
+	}
+}
+
+AutoLevel::AutoLevel (Asm::In & asmin) :
+	LocalLevel (asmin)
+{ }
+
+bool AutoLevel::is_auto () const
+{
+	return true;
+}
+
+ProcLevel::ProcLevel (Asm::In & asmin, size_t line) :
+	LocalLevel (asmin),
+	line (line)
+{ }
+
+size_t ProcLevel::getline () const
+{
+	return line;
+}
+
+MacroLevel::MacroLevel (Asm::In & asmin) :
+	LocalLevel (asmin)
+{ }
+
+LocalStack::~LocalStack ()
+{
+	while (! st.empty () )
+		pop ();
+}
+
+bool LocalStack::empty () const
+{
+	return st.empty ();
+}
+
+void LocalStack::push (LocalLevel * level)
+{
+	st.push (level);
+}
+
+LocalLevel * LocalStack::top ()
+{
+	if (st.empty () )
+		throw "Not in LOCAL valid level";
+	return st.top ();
+}
+
+void LocalStack::pop ()
+{
+	if (st.empty () )
+		throw "Not in LOCAL valid level";
+	delete st.top ();
+	st.pop ();
+}
+
+} // namespace
+
+//*********************************************************
+//		class Asm::In definitions
+//*********************************************************
+
 Asm::In::In () :
 	nocase (false),
+	autolocalmode (false),
 	debugtype (NoDebug),
 	base (0),
 	current (0),
@@ -624,6 +812,7 @@ Asm::In::In () :
 
 Asm::In::In (const Asm::In & in) :
 	nocase (in.nocase),
+	autolocalmode (in.autolocalmode),
 	debugtype (in.debugtype),
 	base (0),
 	current (0),
@@ -664,6 +853,11 @@ void Asm::In::setbase (unsigned int addr)
 void Asm::In::caseinsensitive ()
 {
 	nocase= true;
+}
+
+void Asm::In::autolocal ()
+{
+	autolocalmode= true;
 }
 
 void Asm::In::addincludedir (const std::string & dirname)
@@ -735,11 +929,15 @@ void Asm::In::gencodeword (address value)
 
 void Asm::In::setvalue (const std::string & var, address value)
 {
+	checkautolocal (var);
+
 	mapvar [var]= value;
 }
 
 address Asm::In::getvalue (const std::string & var, bool required)
 {
+	checkautolocal (var);
+
 	mapvar_t::iterator it= mapvar.find (var);
 	if (it == mapvar.end () )
 	{
@@ -1297,6 +1495,51 @@ void Asm::In::parseline (Tokenizer & tz)
 	}
 }
 
+AutoLevel * Asm::In::enterautolocal ()
+{
+	AutoLevel * pav;
+	if (localstack.empty () || ! localstack.top ()->is_auto () )
+	{
+		* perr << "Enter autolocal level" << endl;
+		pav= new AutoLevel (* this);
+		localstack.push (pav);
+	}
+	else
+	{
+		pav= dynamic_cast <AutoLevel *> (localstack.top () );
+		ASSERT (pav);
+	}
+	return pav;
+}
+
+void Asm::In::finishautolocal ()
+{
+	if (! localstack.empty () )
+	{
+		LocalLevel * plevel= localstack.top ();
+		if (plevel->is_auto () )
+		{
+			if (autolocalmode)
+			{
+				* perr << "Exit autolocal level" << endl;
+				localstack.pop ();
+			}
+			else
+				throw logic_error
+					("Unexpected autolocal block");
+		}
+	}
+}
+
+void Asm::In::checkautolocal (const std::string & varname)
+{
+	if (autolocalmode && varname [0] == AutoLocalPrefix)
+	{
+		AutoLevel *pav= enterautolocal ();
+		pav->add (varname);
+	}
+}
+
 void Asm::In::dopass ()
 {
 	initlocal ();
@@ -1317,6 +1560,9 @@ void Asm::In::dopass ()
 	}
 	if (iflevel > 0)
 		throw "IF without ENDIF";
+
+	finishautolocal ();
+
 	if (! localstack.empty () )
 	{
 		ProcLevel * proc=
@@ -1616,6 +1862,8 @@ void Asm::In::parseEND (Tokenizer & tz)
 
 void Asm::In::parseLOCAL (Tokenizer & tz)
 {
+	if (autolocalmode)
+		throw "LOCAL directive not allowed in autolocal mode";
 	LocalLevel * plocal= localstack.top ();
 	for (;;)
 	{
@@ -1636,6 +1884,8 @@ void Asm::In::parseLOCAL (Tokenizer & tz)
 
 void Asm::In::parsePROC (Tokenizer & tz)
 {
+	if (autolocalmode)
+		throw "PROC directive not allowed in autolocal mode";
 	checkendline (tz);
 	ProcLevel * pproc= new ProcLevel (* this, currentline);
 	localstack.push (pproc);
@@ -1661,6 +1911,18 @@ const char redefinedDEFL []= " Redefined from previous DEFL";
 
 void Asm::In::setequorlabel (const std::string & name, address value)
 {
+	if (autolocalmode)
+	{
+		if (name [0] == AutoLocalPrefix)
+		{
+			AutoLevel *pav= enterautolocal ();
+			ASSERT (pav);
+			pav->add (name);
+		}
+		else
+			finishautolocal ();
+	}
+
 	switch (vardefined [name] )
 	{
 	case NoDefined:
@@ -1698,14 +1960,12 @@ void Asm::In::parselabel (Tokenizer & tz, const std::string & name)
 	case TypeEQU:
 		{
 			tok= tz.gettoken ();
-			//address value= getvalue (tok);
 			address value= parseexpr (false, tok, tz);
 			checkendline (tz);
 			setequorlabel (name, value);
 		}
 		break;
 	case TypeDEFL:
-		// Same as EQU, provisional.
 		{
 			tok= tz.gettoken ();
 			address value= parseexpr (false, tok, tz);
@@ -4714,6 +4974,11 @@ void Asm::setbase (unsigned int addr)
 void Asm::caseinsensitive ()
 {
 	pin->caseinsensitive ();
+}
+
+void Asm::autolocal ()
+{
+	pin->autolocal ();
 }
 
 void Asm::addincludedir (const std::string & dirname)

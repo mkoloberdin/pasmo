@@ -68,6 +68,9 @@
 		--nocase   -->	Hace que los identificadores no distingan
 				mayúsculas de minúsculas.
 
+		--alocal   -->	Modo autolocal: las etiquetas que comienzan
+				por un '_' son locales y su ámbito termina
+				en la sigiente etiqueta no local.
 
 	Si ninguna opción indica lo contrario, el formato del código objeto
 generado es binario sin cabecera.
@@ -144,6 +147,9 @@ Comentarios y críticas a: ninsesabe@arrakis.es
 
 		--nocase   -->	Make identifiers case insensitive.
 
+		--alocal   -->	Autolocal mode: the labels than begins with
+				a '_' are locals, and his ambit finishes in
+				the next no local label.
 
 	If no options specify another, the object code format is binary
 without headers.

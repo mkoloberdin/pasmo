@@ -1,5 +1,5 @@
 // asm.h
-// Revision 7-apr-2004
+// Revision 27-oct-2004
 
 #include <iostream>
 #include <string>
@@ -25,6 +25,7 @@ public:
 	void errtostdout ();
 	void setbase (unsigned int addr);
 	void caseinsensitive ();
+	void autolocal ();
 	void addincludedir (const std::string & dirname);
 
 	void processfile (const std::string & filename);
@@ -40,9 +41,11 @@ public:
 	void dumpsymbol (std::ostream & out);
 private:
 	void operator = (const Asm &); // Forbidden
-
+public:
+	// Make it public to simplify implementation.
 	class In;
 	friend class In;
+private:
 	In * pin;
 };
 

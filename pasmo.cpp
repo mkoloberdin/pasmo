@@ -1,5 +1,5 @@
 // pasmo.cpp
-// Revision 7-apr-2004
+// Revision 27-oct-2004
 
 #include "asm.h"
 
@@ -34,6 +34,7 @@ int doit (int argc, char * * argv)
 	Asm::DebugType debugtype= Asm::NoDebug;
 	bool redirecterr= false;
 	bool nocase= false;
+	bool autolocal= false;
 	for ( ; argpos < argc; ++argpos)
 	{
 		const std::string arg (argv [argpos] );
@@ -68,6 +69,8 @@ int doit (int argc, char * * argv)
 			redirecterr= true;
 		else if (arg == "--nocase")
 			nocase= true;
+		else if (arg == "--alocal")
+			autolocal= true;
 		else if (arg == "-I")
 		{
 			++argpos;
@@ -114,6 +117,8 @@ int doit (int argc, char * * argv)
 		a.errtostdout ();
 	if (nocase)
 		a.caseinsensitive ();
+	if (autolocal)
+		a.autolocal ();
 
 	// Assemble.
 
@@ -221,7 +226,7 @@ int main (int argc, char * * argv)
 	}
 	catch (Usage &)
 	{
-		cerr <<	"Pasmo v. 0.3.6 (C) 2004 Julian Albo\n\n"
+		cerr <<	"Pasmo v. 0.3.7 (C) 2004 Julian Albo\n\n"
 			"Usage:\n\n"
 			"\tpasmo [options] source object [symbol]\n\n"
 			"See the README file for details.\n";

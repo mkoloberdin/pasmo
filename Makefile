@@ -22,4 +22,8 @@ tgz:
 strip: pasmo
 	strip pasmo
 
+clean:
+	rm -f pasmo
+	rm -f *.o
+
 # Fin.

@@ -7,6 +7,12 @@ start
 	xor a
 	ld (tv_flag),a
 
+	ld b, 50
+
+another
+
+	push bc
+
 	ld hl,hello
 again	ld a,(hl)
 	cp 0
@@ -17,7 +23,10 @@ again	ld a,(hl)
 	inc hl
 	jr again
 
-exit	ret
+exit
+	pop bc
+	djnz another
+	ret
 
 hello	db "Hello, world.", 0Dh, 0
 

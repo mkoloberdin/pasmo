@@ -1,3 +1,7 @@
+	Version 0.3.7
+
+Added --alocal option for autolocal mode.
+
 	Version 0.3.6
 
 Added -I option.

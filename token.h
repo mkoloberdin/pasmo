@@ -1,5 +1,5 @@
 // token.h
-// Revision 6-apr-2004
+// Revision 27-oct-2004
 
 #include <string>
 #include <sstream>
@@ -39,12 +39,12 @@ enum TypeToken {
 	TypeDollar= '$',
 	TypeMod= '%',
 
-	// Valores
+	// Literals.
 	TypeIdentifier= 0x100,
 	TypeLiteral,
 	TypeNumber,
 
-	// Operadores.
+	// Operators.
 	TypeMOD,
 	TypeSHL,
 	TypeSHR,
@@ -58,7 +58,7 @@ enum TypeToken {
 	TypeNE,
 	TypeNUL,
 
-	// Directivas
+	// Directives
 	TypeDEFB,
 	TypeDB,
 	TypeDEFM,
@@ -85,7 +85,7 @@ enum TypeToken {
 	TypeREPT,
 	TypeIRP,
 
-	// Nemonicos
+	// Nemonics
 	TypeADC,
 	TypeADD,
 	TypeAND,
