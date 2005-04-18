@@ -1,5 +1,5 @@
 // pasmo.cpp
-// Revision 21-dec-2004
+// Revision 12-apr-2005
 
 #include "asm.h"
 
@@ -21,7 +21,7 @@ using std::string;
 using std::vector;
 using std::runtime_error;
 
-const string pasmoversion ("0.5.1");
+const string pasmoversion (VERSION);
 
 
 class Usage { };
@@ -389,7 +389,7 @@ int main (int argc, char * * argv)
 	catch (Usage &)
 	{
 		cerr <<	"Pasmo v. " << pasmoversion <<
-			" (C) 2004 Julian Albo\n\n"
+			" (C) 2004-2005 Julian Albo\n\n"
 			"Usage:\n\n"
 			"\tpasmo [options] source object [symbol]\n\n"
 			"See the README file for details.\n";

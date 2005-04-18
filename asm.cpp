@@ -1,5 +1,5 @@
 // asm.cpp
-// Revision 21-dec-2004
+// Revision 18-apr-2005
 
 #include "asm.h"
 #include "token.h"
@@ -40,19 +40,19 @@ using std::for_each;
 using std::fill;
 
 
+namespace {
+
+
 //*********************************************************
 //		Exceptions.
 //*********************************************************
 
 
-namespace {
-
-
 // Errors that must never happen, they are handled for diagnose
 // Pasmo bugs.
 
-
 logic_error UnexpectedError ("Unexpected error");
+logic_error UnexistentMode ("Mode of code generation invalid");
 logic_error UnexpectedPrefix ("Unexpected prefix");
 logic_error UnexpectedRegisterCode ("Unexpected register code");
 logic_error InvalidFlagConvert ("Inalid flag specified for conversion");
@@ -66,6 +66,7 @@ logic_error InvalidPassValue ("Invalid value of pass");
 logic_error UnexpectedORG ("Unexpected ORG found");
 logic_error UnexpectedMACRO ("Unexpected MACRO found");
 logic_error MACROLostENDM ("Unexpected MACRO without ENDM");
+
 
 // Errors in the code being assembled.
 
@@ -223,15 +224,11 @@ void checktoken (TypeToken ttexpected, const Token & tok)
 		throw TokenExpected (ttexpected, tok);
 }
 
-} // namespace
-
 
 //*********************************************************
 //		Auxiliary functions and constants.
 //*********************************************************
 
-
-namespace {
 
 const std::string emptystr;
 
@@ -429,6 +426,7 @@ byte getbaseByteInst (TypeByteInst ti, GenCodeMode genmode)
 		return byte86 [ti];
 	default:
 		ASSERT (false);
+		throw UnexistentMode;
 	}
 }
 
@@ -444,6 +442,7 @@ byte getByteInstInmediate (TypeByteInst ti, GenCodeMode genmode)
 		return byte86 [ti];
 	default:
 		ASSERT (false);
+		throw UnexistentMode;
 	}
 }
 
@@ -498,7 +497,19 @@ std::string getregbname (regbCode rb, byte prefix= NoPrefix,
 	}
 }
 
-} // namespace
+
+std::string tablabel (std::string str)
+{
+	const std::string::size_type l= str.size ();
+	if (l < 8)
+		str+= "\t\t";
+	else
+		if (l < 16)
+			str+= '\t';
+		else
+			str+= ' ';
+	return str;
+}
 
 
 //*********************************************************
@@ -506,46 +517,49 @@ std::string getregbname (regbCode rb, byte prefix= NoPrefix,
 //*********************************************************
 
 
-namespace {
-
 class Nullbuff : public std::streambuf
 {
 public:
-	Nullbuff ()
-	{
-		setbuf (0, 0);
-	}
+	Nullbuff ();
 protected:
-	int overflow (int)
-	{
-		setp (pbase (), epptr () );
-		return 0;
-	}
-	int sync ()
-	{
-		return 0;
-	}
+	int overflow (int);
+	int sync ();
 };
+
+Nullbuff::Nullbuff ()
+{
+	setbuf (0, 0);
+}
+
+int Nullbuff::overflow (int)
+{
+	setp (pbase (), epptr () );
+	return 0;
+}
+
+int Nullbuff::sync ()
+{
+	return 0;
+}
+
 
 class Nullostream : public std::ostream
 {
 public:
-	Nullostream () :
-		std::ostream (& buff)
-	{ }
+	Nullostream ();
 private:
 	Nullbuff buff;
 };
 
-} // namespace
+Nullostream::Nullostream () :
+	std::ostream (& buff)
+{ }
 
 
 //***********************************************
 //		Auxiliary tables
 //***********************************************
 
-
-namespace {
 
 struct SimpleInst {
 	byte code;
@@ -611,6 +625,7 @@ InitSimple::InitSimple ()
 	simpleinst [TypeRRD]=  SimpleInst (0x67, true);
 }
 
+
 } // namespace
 
 
@@ -619,7 +634,8 @@ InitSimple::InitSimple ()
 //*********************************************************
 
 
-namespace {
+namespace pasmo_impl {
+
 
 class MacroBase {
 protected:
@@ -688,15 +704,10 @@ public:
 	{ }
 };
 
-} // namespace
-
 
 //*********************************************************
 //		Local classes declarations.
 //*********************************************************
-
-
-namespace {
 
 
 enum Defined {
@@ -748,6 +759,7 @@ private:
 
 typedef std::map <std::string, VarData> mapvar_t;
 
+
 class LocalLevel {
 public:
 	LocalLevel (Asm::In & asmin_n);
@@ -760,11 +772,13 @@ private:
 	std::map <std::string, std::string> globalized;
 };
 
+
 class AutoLevel : public LocalLevel {
 public:
 	AutoLevel (Asm::In & asmin_n);
 	bool is_auto () const;
 };
+
 
 class ProcLevel : public LocalLevel {
 public:
@@ -774,10 +788,12 @@ private:
 	size_t line;
 };
 
+
 class MacroLevel : public LocalLevel {
 public:
 	MacroLevel (Asm::In & asmin_n);
 };
+
 
 class LocalStack {
 public:
@@ -791,15 +807,34 @@ private:
 	st_t st;
 };
 
-} // namespace
+
+class MacroFrameBase;
+
+
+} // namespace pasmo_impl
+
+
+using pasmo_impl::Macro;
+using pasmo_impl::MacroIrp;
+using pasmo_impl::MacroRept;
+
+using pasmo_impl::Defined;
+using pasmo_impl::NoDefined;
+using pasmo_impl::DefinedDEFL;
+using pasmo_impl::PreDefined;
+using pasmo_impl::DefinedPass1;
+using pasmo_impl::DefinedPass2;
+
+using pasmo_impl::VarData;
+using pasmo_impl::LocalLevel;
+using pasmo_impl::AutoLevel;
+using pasmo_impl::ProcLevel;
+using pasmo_impl::LocalStack;
 
 
 //*********************************************************
 //		class Asm::In declaration
 //*********************************************************
-
-
-class MacroFrameBase;
 
 
 class Asm::In : public AsmFile {
@@ -827,6 +862,8 @@ public:
 
 	void loadfile (const std::string & filename);
 	void processfile ();
+
+	int currentpass () const;
 
 	// Object file generation.
 	address getcodesize () const;
@@ -951,10 +988,13 @@ private:
 		bool needcomma);
 	byte parsedesp (Tokenizer & tz, bool bracket);
 
-	// Z80 instructions.
+	// Aux error and warning functions.
 
+	void emitwarning (const std::string & text);
 	void no8080 ();
 	void no86 ();
+
+	// Z80 instructions.
 
 	bool parsebyteparam (Tokenizer & tz, TypeToken tt,
 		regbCode & regcode,
@@ -1078,6 +1118,7 @@ private:
 
 	// ********** Symbol tables ************
 
+	typedef pasmo_impl::mapvar_t mapvar_t;
 	mapvar_t mapvar;
 
 	typedef std::set <std::string> setpublic_t;
@@ -1093,16 +1134,12 @@ private:
 
 	// ********* Local **********
 
-	friend class LocalLevel;
+	friend class pasmo_impl::LocalLevel;
 
 	size_t localcount;
 
-	void initlocal () { localcount= 0; }
-	std::string genlocalname ()
-	{
-		return hex8str (localcount++);
-	}
-
+	void initlocal ();
+	std::string genlocalname ();
 
 	LocalStack localstack;
 
@@ -1131,11 +1168,13 @@ private:
 	void parseREPT (Tokenizer & tz);
 	void parseIRP (Tokenizer & tz);
 
-	friend class MacroFrameBase;
+	friend class pasmo_impl::MacroFrameBase;
 
-	MacroFrameBase * pcurrentmframe;
-	MacroFrameBase * getmframe () const { return pcurrentmframe; }
-	void setmframe (MacroFrameBase * pnew) { pcurrentmframe= pnew; }
+	pasmo_impl::MacroFrameBase * pcurrentmframe;
+	pasmo_impl::MacroFrameBase * getmframe () const
+	{ return pcurrentmframe; }
+	void setmframe (pasmo_impl::MacroFrameBase * pnew)
+	{ pcurrentmframe= pnew; }
 
 	// gencode control.
 
@@ -1148,7 +1187,8 @@ private:
 //*********************************************************
 
 
-namespace {
+namespace pasmo_impl {
+
 
 LocalLevel::LocalLevel (Asm::In & asmin_n) :
 	asmin (asmin_n)
@@ -1160,11 +1200,10 @@ LocalLevel::~LocalLevel ()
 		it != saved.end ();
 		++it)
 	{
-		const std::string & name=
-			globalized [it->first];
-		asmin.mapvar [name]=
-			asmin.mapvar [it->first];
-		asmin.mapvar [it->first]= it->second;
+		const std::string locname= it->first;
+		const std::string & globname= globalized [locname];
+		asmin.mapvar [globname]= asmin.mapvar [locname];
+		asmin.mapvar [locname]= it->second;
 	}
 }
 
@@ -1182,16 +1221,16 @@ void LocalLevel::add (const std::string & var)
 
 	saved [var]= asmin.mapvar [var];
 
-	const std::string name= asmin.genlocalname ();
-	globalized [var]= name;
+	const std::string globname= asmin.genlocalname ();
+	globalized [var]= globname;
 
-	if (asmin.pass == 1)
+	if (asmin.currentpass () == 1)
 	{
 		asmin.mapvar [var]= VarData (true);
 	}
 	else
 	{
-		asmin.mapvar [var]= asmin.mapvar [name];
+		asmin.mapvar [var]= asmin.mapvar [globname];
 	}
 }
 
@@ -1249,7 +1288,8 @@ void LocalStack::pop ()
 	st.pop ();
 }
 
-} // namespace
+
+} // namespace pasmo_impl
 
 
 //*********************************************************
@@ -1408,7 +1448,10 @@ void Asm::In::setentrypoint (address addr)
 	if (pass < 2)
 		return;
 	if (hasentrypoint)
-		* pwarn << "WARNING: Entry point redefined" << endl;
+	{
+		//* pwarn << "WARNING: Entry point redefined" << endl;
+		emitwarning ("Entry point redefined");
+	}
 	hasentrypoint= true;
 	entrypoint= addr;
 }
@@ -1435,23 +1478,6 @@ void Asm::In::gendataword (address dataword)
 	gendata (lobyte (dataword) );
 	gendata (hibyte (dataword) );
 }
-
-namespace {
-
-std::string tablabel (std::string str)
-{
-	const std::string::size_type l= str.size ();
-	if (l < 8)
-		str+= "\t\t";
-	else
-		if (l < 16)
-			str+= '\t';
-		else
-			str+= ' ';
-	return str;
-}
-
-} // namespace
 
 void Asm::In::showcode (const std::string & instruction)
 {
@@ -1484,6 +1510,15 @@ void Asm::In::showcode (const std::string & instruction)
 		* pout << '\t' << instruction;
 	}
 	* pout << endl;
+
+	// Check that the 64KB limit has not been exceeded in the
+	// middle of an instruction.
+	if (posend != 0 && posend < currentinstruction)
+	{
+		//* pwarn << "WARNING: 64KB limit passed inside instruction" <<
+		//	endl;
+		emitwarning ("64KB limit passed inside instruction");
+	}
 }
 
 void Asm::In::gencode (byte code)
@@ -2218,6 +2253,16 @@ void Asm::In::parseline (Tokenizer & tz)
 	}
 }
 
+void Asm::In::initlocal ()
+{
+	localcount= 0;
+}
+
+std::string Asm::In::genlocalname ()
+{
+	return hex8str (localcount++);
+}
+
 bool Asm::In::isautolocalname (const std::string & name)
 {
 	static const char AutoLocalPrefix= '_';
@@ -2272,6 +2317,10 @@ void Asm::In::checkautolocal (const std::string & varname)
 	}
 }
 
+
+namespace pasmo_impl {
+
+
 class ClearDefl {
 public:
 	void operator () (mapvar_t::value_type & vardef)
@@ -2281,6 +2330,10 @@ public:
 			vd.clear ();
 	}
 };
+
+
+} // namespace pasmo_impl
+
 
 void Asm::In::dopass ()
 {
@@ -2292,7 +2345,8 @@ void Asm::In::dopass ()
 	mapmacro.clear ();
 
 	// Clear DEFL.
-	std::for_each (mapvar.begin (), mapvar.end (), ClearDefl () );
+	std::for_each (mapvar.begin (), mapvar.end (),
+		pasmo_impl::ClearDefl () );
 
 	current= base;
 	iflevel= 0;
@@ -2358,6 +2412,11 @@ void Asm::In::processfile ()
 		* perr << endl;
 		throw;
 	}
+}
+
+int Asm::In::currentpass () const
+{
+	return pass;
 }
 
 bool Asm::In::parsesimple (Tokenizer & tz, Token tok)
@@ -2747,7 +2806,8 @@ void Asm::In::parse_WARNING (Tokenizer & tz)
 {
 	Token tok= tz.gettoken ();
 	ASSERT (tok.type () == TypeLiteral);
-	* pwarn << "WARNING: " << tok.str () << endl;
+	//* pwarn << "WARNING: " << tok.str () << endl;
+	emitwarning (tok.str () );
 }
 
 bool Asm::In::setequorlabel (const std::string & name, address value)
@@ -3026,13 +3086,21 @@ byte Asm::In::parsedesp (Tokenizer & tz, bool bracket)
 	return desp;
 }
 
+void Asm::In::emitwarning (const std::string & text)
+{
+	* pwarn << "WARNING: " << text;
+	showcurrentlineinfo (* pwarn);
+	* pwarn << endl;
+}
+
 void Asm::In::no8080 ()
 {
 	if (warn8080mode)
 	{
-		* pwarn << "WARNING: not a 8080 instruction";
-		showcurrentlineinfo (* pwarn);
-		* pwarn << endl;
+		//* pwarn << "WARNING: not a 8080 instruction";
+		//showcurrentlineinfo (* pwarn);
+		//* pwarn << endl;
+		emitwarning ("not a 8080 instruction");
 	}
 }
 
@@ -3167,9 +3235,10 @@ void Asm::In::dobyteinmediate (Tokenizer & tz, byte code,
 
 	if (check && tz.endswithparen () )
 	{
-		* pwarn << "WARNING: looks like a non existent instruction";
-		showcurrentlineinfo (* pwarn);
-		* pwarn << endl;
+		//* pwarn << "WARNING: looks like a non existent instruction";
+		//showcurrentlineinfo (* pwarn);
+		//* pwarn << endl;
+		emitwarning ("looks like a non existent instruction");
 	}
 
 	if (prefix != NoPrefix)
@@ -5135,7 +5204,8 @@ void Asm::In::parseINCBIN (Tokenizer & tz)
 //*********************************************************
 
 
-namespace {
+namespace pasmo_impl {
+
 
 typedef std::vector <Token> MacroParam;
 typedef std::vector <MacroParam> MacroParamList;
@@ -5199,7 +5269,7 @@ Tokenizer substmacroparams (const MacroBase & macro, Tokenizer & tz,
 }
 
 
-} // namespace
+} // namespace pasmo_impl
 
 
 bool Asm::In::gotoENDM ()
@@ -5226,6 +5296,10 @@ bool Asm::In::gotoENDM ()
 	}
 	return true;
 }
+
+
+
+namespace pasmo_impl {
 
 
 // Macro expansion control classes: create the MacroLevel, store some
@@ -5401,6 +5475,15 @@ Tokenizer MacroFrameMacro::substparams (Tokenizer & tz)
 		tzr.push_back (last);
 	return tzr;
 }
+
+} // namespace pasmo_impl
+
+
+using pasmo_impl::MacroParam;
+using pasmo_impl::MacroParamList;
+using pasmo_impl::getmacroparams;
+using pasmo_impl::MacroFrameChild;
+using pasmo_impl::MacroFrameMacro;
 
 
 
@@ -6153,7 +6236,9 @@ void Asm::In::emitprl (std::ostream & out)
 		throw ErrorOutput;
 }
 
+
 namespace {
+
 
 class CmdGroup {
 public:
@@ -6202,7 +6287,9 @@ void CmdGroup::put (std::ostream & out) const
 	putword (out, maximum);
 }
 
+
 } // namespace
+
 
 void Asm::In::emitcmd (std::ostream & out)
 {

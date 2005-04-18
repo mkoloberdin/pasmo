@@ -1,5 +1,5 @@
 // asmfile.cpp
-// Revision 21-dec-2004
+// Revision 15-jan-2005
 
 #include "asmfile.h"
 
@@ -38,7 +38,7 @@ public:
 	bool empty () const;
 	size_t numline () const;
 	Tokenizer & gettkz ();
-	const std::string & gettext () const;
+	const std::string & getstrline () const;
 private:
 	std::string text;
 	Tokenizer tkz;
@@ -68,7 +68,7 @@ Tokenizer & FileLine::gettkz ()
 	return tkz;
 }
 
-const std::string & FileLine::gettext () const
+const std::string & FileLine::getstrline () const
 {
 	return text;
 }
@@ -89,7 +89,7 @@ public:
 	bool lineempty (size_t n) const;
 	size_t numline (size_t n) const;
 	Tokenizer & gettkz (size_t n);
-	const std::string & gettext (size_t n) const;
+	const std::string & getstrline (size_t n) const;
 
 	void pushline (const std::string & text, const Tokenizer & tkz,
 		size_t realnumline);
@@ -146,11 +146,11 @@ Tokenizer & FileRef::gettkz (size_t n)
 	return line [n].gettkz ();
 }
 
-const std::string & FileRef::gettext (size_t n) const
+const std::string & FileRef::getstrline (size_t n) const
 {
 	ASSERT (n < line.size () );
 
-	return line [n].gettext ();
+	return line [n].getstrline ();
 }
 
 void FileRef::pushline (const std::string & text, const Tokenizer & tkz,
@@ -202,7 +202,7 @@ public:
 
 	bool lineempty (size_t n) const;
 	Tokenizer & gettkz (size_t n);
-	const std::string & gettext (size_t n) const;
+	const std::string & getstrline (size_t n) const;
 
 	void addincludedir (const std::string & dirname);
 	void openis (std::ifstream & is, const std::string & filename,
@@ -304,13 +304,13 @@ Tokenizer & AsmFile::In::gettkz (size_t n)
 	return getfile (lc.getfilenum () ).gettkz (lc.getfileline () );
 }
 
-const std::string & AsmFile::In::gettext (size_t n) const
+const std::string & AsmFile::In::getstrline (size_t n) const
 {
 	ASSERT (n < numlines () );
 
-	//return vlinecont [n].gettext ();
+	//return vlinecont [n].getstrline ();
 	const LineContent & lc= getline (n);
-	return getfile (lc.getfilenum () ).gettext (lc.getfileline () );
+	return getfile (lc.getfilenum () ).getstrline (lc.getfileline () );
 }
 
 void AsmFile::In::addincludedir (const std::string & dirname)
@@ -534,8 +534,8 @@ Tokenizer & AsmFile::getcurrentline ()
 const std::string & AsmFile::getcurrenttext () const
 {
 	ASSERT (! passeof () );
-	//return in ().getlinecont (currentline).gettext ();
-	return in ().gettext (currentline);
+	//return in ().getlinecont (currentline).getstrline ();
+	return in ().getstrline (currentline);
 }
 
 void AsmFile::setline (size_t line)

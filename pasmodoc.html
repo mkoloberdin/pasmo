@@ -14,7 +14,7 @@
 <h1>Pasmo documentation.</h1>
 
 <p>
-(C) 2004 Juli&aacute;n Albo.
+(C) 2004-2005 Juli&aacute;n Albo.
 </p>
 
 <p>
@@ -22,11 +22,11 @@ Use and distribution allowed under the terms of the GPL license.
 </p>
 
 <p>
-Last revision date: 21-dec-2004
+Last revision date: 19-apr-2005
 </p>
 
 <p>
-Current Pasmo version: 0.5.1
+Current Pasmo version: 0.5.2
 </p>
 
 <h2>Index.</h2>
@@ -128,7 +128,7 @@ Current Pasmo version: 0.5.1
 <a href="#macros">Macros.</a>
 	<ul>
 	<li><a href="#macrogeneral">Generalities.</a></li>
-	<li><a href="#macrodirectives">Directives.</a></li>
+	<li><a href="#macrodirectives">Directives.</a>
 		<ul>
 		<li><a href="#macroshift">.SHIFT</a></li>
 		<li><a href="#macroendm">ENDM</a></li>
@@ -137,6 +137,7 @@ Current Pasmo version: 0.5.1
 		<li><a href="#macromacro">MACRO</a></li>
 		<li><a href="#macrorept">REPT</a></li>
 		</ul>
+	</li>
 	</ul>
 </li>
 
@@ -190,19 +191,26 @@ This feature is experimental, use with care.
 <p>
 Download Pasmo from
 <a href="http://www.arrakis.es/~ninsesabe/pasmo/"
->http://www.arrakis.es/~ninsesabe/pasmo/</a>.
-A binary executable for windows is provided, for other platforms you must
-download the source package and compile it. If you want to compile it in
-windows you can use cygwin or mingw with the Makefile provided, with other
-compilers you may need to create a project, workspace or whatever your
-compiler or IDE uses.<br>
+>http://www.arrakis.es/~ninsesabe/pasmo/</a>.<br>
+
+Several binary executable are provided in the web, if your platform
+is not between these, or wants a more recent version, you must
+download the source package and compile it. If you want to compile it
+in windows you can use cygwin or mingw with the Makefile provided, with
+other compilers you may need to create a project, workspace or whatever
+your compiler or IDE uses.<br>
+
 To compile you need gcc version 2.95 or later, with the c++ language
 included (usually a package called g++-something).<br>
+
 Others compilers may also be used, any reasonable standard complaint
 c++ compiler must compile it with few or none corrections.<br>
-Just execute 'make' in the pasmo directory, and the excutable will be
-generated. There is no install, you must manually copy the executable
-to a directory in the PATH, if you want.
+
+From version 0.5.2 a configure script is provided. You can use the
+usual './configure ; make ; make install' procedure.<br>
+
+You have also an official Debian package for testing and
+unstable releases.
 </p>
 
 <h2><a name="command">Command line use</a>.</h2>

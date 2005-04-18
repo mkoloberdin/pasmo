@@ -1,5 +1,5 @@
 // token.cpp
-// Revision 21-dec-2004
+// Revision 15-jan-2005
 
 #include "token.h"
 
@@ -1135,12 +1135,6 @@ bool Tokenizer::endswithparen () const
 	return tokenlist.back ().type () == TypeClose;
 }
 
-
-size_t Tokenizer::pos () const
-{
-	return std::distance (tokenlist.begin (),
-		static_cast <const tokenlist_t::const_iterator> (current) );
-}
 
 void Tokenizer::reset ()
 {

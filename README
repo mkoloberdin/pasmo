@@ -6,21 +6,27 @@
 	ESPAÑOL.
 
 
-	Pasmo version preliminar.
-	(C) 2004 Julián Albo
+	Pasmo, ensablador Z80 cruzado multiplataforma.
+	(C) 2004-2005 Julián Albo
 	Utilización y distribución permitida bajo la licencia GPL.
 
 	Para descargar actualizaciones o obtener más información:
 	http://www.arrakis.es/~ninsesabe/pasmo/
 
-	Para compilar hacer: make
+	Para compilar:
+		./configure
+		make
 
-	Para instalar: copiar el ejecutable pasmo a algún directorio del PATH.
+	Para instalar:
+		make install
+
+	Para compilar con otras opciones:
+		./configure --help
 
 	Documentación: Disponible solamente en inglés, en el fichero
-	pasmodoc.html. Si no va incluido en este paquete está
-	disponible en el sitio web de Pasmo. Ver también los ficheros
-	.asm de ejemplo incluidos en el paquete de los fuentes.
+	pasmodoc.html incluido en este paquete o en el sitio web de
+	Pasmo. Ver también los ficheros .asm de ejemplo incluidos en
+	el paquete de los fuentes.
 
 	Para ensamblar:
 		pasmo [ opciones ] fichero.asm fichero.bin
@@ -134,16 +140,22 @@ Comentarios y críticas a: julian.notfound@gmail.com
 	ENGLISH.
 
 
-	Pasmo, preliminary version.
-	(C) 2004 Julián Albo
+	Pasmo, multiplatform Z80 cross-assembler.
+	(C) 2004-2005 Julián Albo
 	Use and distribution allowed under the terms of the GPL license.
 
 	To download updates or obtain more information:
 	http://www.arrakis.es/~ninsesabe/pasmo/
 
-	To compile do: make
+	To compile:
+		./configure
+		make
 
-	To install: copy the pasmo executable to some directory in the PATH.
+	To install:
+		make install
+
+	To compile with other options:
+		./configure --help
 
 	Documentation: See the file pasmodoc.html, included in this
 	package or in the Pasmo web site. See also the .asm sample

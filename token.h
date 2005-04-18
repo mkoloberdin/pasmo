@@ -2,7 +2,7 @@
 #define INCLUDE_TOKEN_H
 
 // token.h
-// Revision 20-dec-2004
+// Revision 15-jan-2005
 
 #include <string>
 #include <deque>
@@ -245,7 +245,6 @@ public:
 	void push_back (const Token & tok);
 
 	bool empty () const;
-	size_t pos () const;
 	bool endswithparen () const;
 
 	void reset ();

@@ -1,3 +1,10 @@
+	Version 0.5.2
+
+Added warning when 64KB limit is crossed.
+
+Now all warnings show line information.
+
+
 	Version 0.5.1
 
 Enhanced syntax for REPT allowing a control variable, initial
