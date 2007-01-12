@@ -2,35 +2,45 @@
 #define INCLUDE_ASMFILE_H
 
 // asmfile.h
-// Revision 12-dec-2004
+// Revision 29-aug-2005
 
 #include "token.h"
 
 #include <iostream>
 #include <fstream>
-#include <string>
+
+
+namespace pasmo {
+namespace impl {
+
+
+using std::ios;
+using std::ostream;
+using std::ifstream;
+
 
 class AsmFile {
 public:
 	AsmFile ();
 	AsmFile (const AsmFile & af);
 	~AsmFile ();
-	void addincludedir (const std::string & dirname);
-	void loadfile (const std::string & filename, bool nocase,
-		std::ostream & outverb, std::ostream& outerr);
+	void addincludedir (const string & dirname);
+	void loadfile (const string & filename,
+		ostream & outverb, ostream & outerr);
 	size_t getline () const;
 protected:
-	void openis (std::ifstream & is, const std::string & filename,
-		std::ios::openmode mode) const;
-	void showlineinfo (std::ostream & os, size_t nline) const;
-	void showcurrentlineinfo (std::ostream & os) const;
+	void openis (ifstream & is, const string & filename,
+		ios::openmode mode) const;
+	void showlineinfo (ostream & os, size_t nline) const;
+	void showcurrentlineinfo (ostream & os) const;
+	void showline (ostream & os, size_t nline) const;
+	void showcurrentline (ostream & os) const;
 	bool getvalidline ();
 	bool passeof () const;
-	Tokenizer & getcurrentline ();
-	const std::string & getcurrenttext () const;
+	const Tokenizer getcurrentline (AsmMode asmmode);
+	const string & getcurrenttext () const;
 
 	void setline (size_t line);
-	void setendline ();
 	void beginline ();
 	bool nextline ();
 	void prevline ();
@@ -40,9 +50,12 @@ private:
 	In & in ();
 	const In & in () const;
 
-	static const size_t LINE_BEGIN= static_cast <size_t> (-1);
 	size_t currentline;
 };
+
+
+} // namespace impl
+} // namespace pasmo
 
 
 #endif

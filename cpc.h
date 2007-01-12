@@ -2,12 +2,14 @@
 #define INCLUDE_CPCCRC_H
 
 // cpc.h
-// Revision 5-dec-2004
-
-#include <stdlib.h>
+// Revision 11-aug-2005
 
 #include "pasmotypes.h"
 
+#include <stdlib.h>
+
+
+namespace pasmo {
 namespace cpc {
 
 
@@ -16,12 +18,12 @@ unsigned short crc (const unsigned char * data, size_t size);
 class Header {
 public:
 	Header ();
-	Header (const std::string & filename);
+	Header (const string & filename);
 
 	enum Type { Basic, Binary };
 
 	void clear ();
-	void setfilename (const std::string & filename);
+	void setfilename (const string & filename);
 	void settype (Type type);
 	void setblock (byte n);
 	void firstblock (bool isfirst);
@@ -39,10 +41,10 @@ private:
 class AmsdosHeader {
 public:
 	AmsdosHeader ();
-	AmsdosHeader (const std::string & filename);
+	AmsdosHeader (const string & filename);
 
 	void clear ();
-	void setfilename (const std::string & filename);
+	void setfilename (const string & filename);
 	void setlength (address len);
 	void setloadaddress (address load);
 	void setentry (address entry);
@@ -54,19 +56,19 @@ private:
 
 // CPC Locomotive Basic generation.
 
-extern const std::string tokHexNumber;
+extern const string tokHexNumber;
 
-extern const std::string tokCALL;
-extern const std::string tokLOAD;
-extern const std::string tokMEMORY;
+extern const string tokCALL;
+extern const string tokLOAD;
+extern const string tokMEMORY;
 
-std::string number (address n);
-std::string hexnumber (address n);
-std::string basicline (address linenum, const std::string & line);
+string number (address n);
+string hexnumber (address n);
+string basicline (address linenum, const string & line);
 
 
 } // namespace cpc
-
+} // namespace pasmo
 
 #endif
 

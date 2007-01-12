@@ -1,16 +1,20 @@
 // tap.cpp
-// Revision 13-dec-2004
+// Revision 11-aug-2005
 
 #include "tap.h"
 
 #include <algorithm>
 
+
+namespace pasmo {
+
+
 using std::fill;
 
+
 tap::CodeHeader::CodeHeader (address init, address size,
-	const std::string & filename)
+	const string & filename)
 {
-	//memset (block, 0, sizeof (block) );
 	fill (block, block + sizeof (block), byte (0) );
 	block [0]= 19; // Length of block: 17 bytes + flag  + checksum
 	block [1]= 0;
@@ -18,10 +22,10 @@ tap::CodeHeader::CodeHeader (address init, address size,
 	block [3]= 3;  // Type: code block.
 
 	// File name.
-	std::string::size_type l= filename.size ();
+	string::size_type l= filename.size ();
 	if (l > 10)
 		l= 10;
-	for (std::string::size_type i= 0; i < 10; ++i)
+	for (string::size_type i= 0; i < 10; ++i)
 		block [4 + i]= i < l ? filename [i] : ' ';
 
 	// Length of the code block.
@@ -76,7 +80,7 @@ address tap::CodeBlock::size () const
 }
 
 
-tap::BasicHeader::BasicHeader (const std::string & basic)
+tap::BasicHeader::BasicHeader (const string & basic)
 {
 	block [0]= 19;
 	block [1]= 0;
@@ -106,7 +110,7 @@ void tap::BasicHeader::write (std::ostream & out) const
 	out.write (reinterpret_cast <const char *> (block), sizeof (block) );
 }
 
-tap::BasicBlock::BasicBlock (const std::string & basicn) :
+tap::BasicBlock::BasicBlock (const string & basicn) :
 	basic (basicn),
 	basicsize (static_cast <address> (basic.size () ) )
 {
@@ -126,5 +130,7 @@ void tap::BasicBlock::write (std::ostream & out) const
 	out.write (basic.data (), basicsize);
 	out.write (reinterpret_cast <const char *> (& check), 1);
 }
+
+} // namespace pasmo
 
 // End of tap.cpp

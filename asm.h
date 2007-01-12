@@ -1,71 +1,100 @@
+#ifndef INCLUDE_ASM_H
+#define INCLUDE_ASM_H
+
 // asm.h
-// Revision 21-dec-2004
+// Revision 13-jun-2006
+
+#include "pasmotypes.h"
 
 #include <iostream>
-#include <string>
 #include <vector>
 #include <map>
 #include <set>
 #include <deque>
 
+
+namespace pasmo {
+
+
+enum DebugType { NoDebug, DebugSecondPass, DebugAll };
+
+enum ObjectType {
+	ObjectBin,
+	ObjectDump,
+	ObjectHex,
+	ObjectPrl,
+	ObjectRel,
+	ObjectCmd,
+	ObjectCom,
+	ObjectTap,
+	ObjectTapBas,
+	ObjectTzx,
+	ObjectTzxBas,
+	ObjectCdt,
+	ObjectCdtBas,
+	ObjectPlus3Dos,
+	ObjectAmsDos,
+	ObjectMsx
+};
+
+class AsmOptions {
+public:
+	AsmOptions ();
+	ObjectType getObjectType () const;
+	void setObjectType (ObjectType type);
+	address getLinkBase () const;
+	void setLinkBase (address base);
+
+	AsmMode asmmode;
+	bool nocase;
+	bool autolocal;
+	bool bracketonly;
+private:
+	ObjectType objecttype;
+	address linkbase;
+public:
+	string headername;
+	bool mode86;
+	bool warn8080;
+	bool redirecterr;
+	bool verbose;
+	bool common_after_abs;
+	DebugType debugtype;
+	size_t lines_to_skip;
+	size_t numerr;
+
+	std::vector <string> module;
+};
+
+
 class Asm {
 public:
 	Asm ();
+	virtual ~Asm ();
 
-	// This is not a copy constructor, it creates a new
-	// instance copying only the options.
-	//explicit Asm (const Asm & a);
+	static Asm * create (const AsmOptions & options_n);
 
-	~Asm ();
+	virtual void addincludedir (const string & dirname)= 0;
+	virtual void addpredef (const string & predef)= 0;
+	virtual void setfilelisting (std::ostream & out_n)= 0;
 
-	void verbose ();
-	enum DebugType { NoDebug, DebugSecondPass, DebugAll };
-	DebugType debugtype;
-	void setdebugtype (DebugType type);
-	void errtostdout ();
-	void setbase (unsigned int addr);
-	void caseinsensitive ();
-	void autolocal ();
-	void bracketonly ();
-	void warn8080 ();
-	void set86 ();
+	virtual void loadfile (const string & filename)= 0;
+	virtual void processfile ()= 0;
+	virtual void link ()= 0;
 
-	void addincludedir (const std::string & dirname);
-	void addpredef (const std::string & predef);
-	void setheadername (const std::string & headername_n);
+	virtual void emitcode (std::ostream & out)= 0;
 
-	void loadfile (const std::string & filename);
-	void processfile ();
-
-	void emitobject (std::ostream & out);
-	void emitplus3dos (std::ostream & out);
-
-	void emittap (std::ostream & out);
-	void emittzx (std::ostream & out);
-	void emitcdt (std::ostream & out);
-
-	void emittapbas (std::ostream & out);
-	void emittzxbas (std::ostream & out);
-	void emitcdtbas (std::ostream & out);
-
-	void emithex (std::ostream & out);
-	void emitamsdos (std::ostream & out);
-
-	void emitprl (std::ostream & out);
-	void emitcmd (std::ostream & out);
-
-	void emitmsx (std::ostream & out);
-	void dumppublic (std::ostream & out);
-	void dumpsymbol (std::ostream & out);
+	virtual void dumppublic (std::ostream & out)= 0;
+	virtual void dumpsymbol (std::ostream & out)= 0;
+protected:
+	Asm (const Asm & a);
 private:
-	Asm (const Asm & a); // Forbidden
 	void operator = (const Asm &); // Forbidden
-public:
-	// Make it public to simplify implementation.
-	class In;
-	friend class In;
-private:
-	In * pin;
 };
+
+
+} // namespace pasmo
+
+#endif
 
 // End of asm.h

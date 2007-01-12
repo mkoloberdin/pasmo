@@ -2,13 +2,13 @@
 #define INCLUDE_TZX_H
 
 // tzx.h
-// Revision 8-dec-2004
+// Revision 9-aug-2005
 
 #include <iostream>
 
 #include <stdlib.h>
 
-
+namespace pasmo {
 namespace tzx {
 
 void writefilehead (std::ostream & out);
@@ -18,6 +18,7 @@ void writestandardblockhead (std::ostream & out);
 void writeturboblockhead (std::ostream & out, size_t len);
 
 } // namespace tzx
+} // namespace pasmo
 
 #endif
 

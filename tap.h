@@ -2,18 +2,18 @@
 #define INCLUDE_TAP_H
 
 // tap.h
-// Revision 4-dec-2004
+// Revision 11-aug-2005
 
 #include "pasmotypes.h"
 
-#include <string>
 
-
+namespace pasmo {
 namespace tap {
+
 
 class CodeHeader {
 public:
-	CodeHeader (address init, address size, const std::string & filename);
+	CodeHeader (address init, address size, const string & filename);
 	void write (std::ostream & out) const;
 	address size () const { return sizeof (block); }
 private:
@@ -34,7 +34,7 @@ private:
 
 class BasicHeader {
 public:
-	BasicHeader (const std::string & basic);
+	BasicHeader (const string & basic);
 	void write (std::ostream & out) const;
 private:
 	byte block [21];
@@ -42,16 +42,17 @@ private:
 
 class BasicBlock {
 public:
-	BasicBlock (const std::string & basicn);
+	BasicBlock (const string & basicn);
 	void write (std::ostream & out) const;
 private:
-	const std::string & basic;
+	const string & basic;
 	address basicsize;
 	byte block [3];
 	byte check;
 };
 
 } // namespace tap
+} // namespace pasmo
 
 #endif
 

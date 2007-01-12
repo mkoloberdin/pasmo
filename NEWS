@@ -1,6 +1,30 @@
-	Version 0.5.3
+	Version 0.6.0
 
-Fixed bug: several errors give exit status 0.
+New parser written with bison that gives better error information
+and is more powerful and correct than in previous versions.
+Several bugs corrected as result of this change.
+
+Relocatable code generation in REL format and linker capabilities.
+
+Many other sections of code extensively rewritten or reasigned to
+different source files.
+
+Bug in stripping '$' from identifiers, fixed.
+
+Error information format changed.
+
+Debug output now shows indirections with brackets to avoid ambiguities.
+
+Added capability to assembly from 8080 source format.
+
+New directives IF1, IF2, IFDEF, IFNDEF, IRPC, .8080, .Z80, .PHASE and .DEPHASE.
+
+Macro capabilities greatly enhanced.
+
+New command line options --asm, --dump, --help, --input, --listing,
+--output, --skiplines and --version. Some older options have new short or long
+equivalents.
+
 
 	Version 0.5.2
 

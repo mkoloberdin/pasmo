@@ -2,19 +2,23 @@
 #define INCLUDE_TOKEN_H
 
 // token.h
-// Revision 15-jan-2005
+// Revision 1-sep-2005
 
-#include <string>
-#include <deque>
 
 #include "pasmotypes.h"
+#include "pasmoimpl.h"
 
 
-enum TypeToken {
-	TypeUndef= 0,
-	TypeEndLine= 1,
+#include <deque>
 
-	// Single char operators.
+
+namespace pasmo {
+namespace impl {
+
+typedef int TypeToken;
+
+// Single char operators.
+const TypeToken
 	TypeComma= ',',
 	TypeColon= ':',
 	TypePlus= '+',
@@ -35,182 +39,20 @@ enum TypeToken {
 	TypeBitAnd= '&',
 	TypeBitOr= '|',
 	TypeQuestion= '?',
-	TypeSharp= '#',
+	TypeSharp= '#';
 
-	// Literals.
-	TypeIdentifier= 0x100,
-	TypeLiteral,
-	TypeNumber,
 
-	// Special tokens.
-	TypeEndOfInclude,
+regwCode getregw (TypeToken tt);
 
-	// Not single char operators.
-	TypeMOD,
-	TypeFirstName= TypeMOD,
-	TypeSHL,
-	TypeShlOp,
-	TypeSHR,
-	TypeShrOp,
-	TypeNOT,
-	// AND, OR and XOR are nemonics.
-	TypeEQ,
-	TypeLT,
-	TypeLE,
-	TypeLeOp,
-	TypeGT,
-	TypeGE,
-	TypeGeOp,
-	TypeNE,
-	TypeNeOp,
-	TypeNUL,
-	TypeDEFINED,
-	TypeHIGH,
-	TypeLOW,
-	TypeBoolAnd,
-	TypeBoolOr,
-	TypeSharpSharp,
+regbCode getregb (TypeToken tt);
 
-	// Nemonics
-	TypeADC,
-	TypeADD,
-	TypeAND,
-	TypeBIT,
-	TypeCALL,
-	TypeCCF,
-	TypeCP,
-	TypeCPD,
-	TypeCPDR,
-	TypeCPI,
-	TypeCPIR,
-	TypeCPL,
-	TypeDAA,
-	TypeDEC,
-	TypeDI,
-	TypeDJNZ,
-	TypeEI,
-	TypeEX,
-	TypeEXX,
-	TypeHALT,
-	TypeIM,
-	TypeIN,
-	TypeINC,
-	TypeIND,
-	TypeINDR,
-	TypeINI,
-	TypeINIR,
-	TypeJP,
-	TypeJR,
-	TypeLD,
-	TypeLDD,
-	TypeLDDR,
-	TypeLDI,
-	TypeLDIR,
-	TypeNEG,
-	TypeNOP,
-	TypeOR,
-	TypeOTDR,
-	TypeOTIR,
-	TypeOUT,
-	TypeOUTD,
-	TypeOUTI,
-	TypePOP,
-	TypePUSH,
-	TypeRES,
-	TypeRET,
-	TypeRETI,
-	TypeRETN,
-	TypeRL,
-	TypeRLA,
-	TypeRLC,
-	TypeRLCA,
-	TypeRLD,
-	TypeRR,
-	TypeRRA,
-	TypeRRC,
-	TypeRRCA,
-	TypeRRD,
-	TypeRST,
-	TypeSBC,
-	TypeSCF,
-	TypeSET,
-	TypeSLA,
-	TypeSLL,
-	TypeSRA,
-	TypeSRL,
-	TypeSUB,
-	TypeXOR,
+flagCode getflag86 (flagCode fcode);
+flagCode invertflag86 (flagCode fcode);
+flagCode getflag (TypeToken tt);
+string getflagname (flagCode f);
 
-	// Registers
-	// C is listed as flag.
-	TypeA,
-	TypeAF,
-	TypeAFp, // AF'
-	TypeB,
-	TypeBC,
-	TypeD,
-	TypeE,
-	TypeDE,
-	TypeH,
-	TypeL,
-	TypeHL,
-	TypeSP,
-	TypeIX,
-	TypeIXH,
-	TypeIXL,
-	TypeIY,
-	TypeIYH,
-	TypeIYL,
-	TypeI,
-	TypeR,
 
-	// Flags
-	TypeNZ,
-	TypeZ,
-	TypeNC,
-	TypeC,
-	TypePO,
-	TypePE,
-	TypeP,
-	TypeM,
-
-	// Directives
-	TypeDEFB,
-	TypeDB,
-	TypeDEFM,
-	TypeDEFW,
-	TypeDW,
-	TypeDEFS,
-	TypeDS,
-	TypeEQU,
-	TypeDEFL,
-	TypeORG,
-	TypeINCLUDE,
-	TypeINCBIN,
-	TypeIF,
-	TypeELSE,
-	TypeENDIF,
-	TypePUBLIC,
-	TypeEND,
-	TypeLOCAL,
-	TypePROC,
-	TypeENDP,
-	TypeMACRO,
-	TypeENDM,
-	TypeEXITM,
-	TypeREPT,
-	TypeIRP,
-
-	// Directives with .
-	Type_ERROR,
-	Type_WARNING,
-	Type_SHIFT,
-
-	// Last used type number.
-	TypeLastName= Type_SHIFT
-};
-
-std::string gettokenname (TypeToken tt);
+string gettokenname (TypeToken tt);
 
 
 class Token {
@@ -218,50 +60,66 @@ public:
 	Token ();
 	Token (TypeToken ttn);
 	Token (address n);
-	Token (TypeToken ttn, const std::string & sn);
+	Token (address n, const string & sn);
+	Token (char c);
+	Token (TypeToken ttn, const string & sn, address style= 0);
+
 	TypeToken type () const;
-	std::string str () const;
+	bool isliteral () const;
+	string raw () const;
+	string str () const;
 	address num () const;
+	string numstr () const;
+	string literal () const;
+	string identifier () const;
+	string macroname () const;
+	string macroarg () const;
 private:
 	TypeToken tt;
-	std::string s;
+	string s;
 	address number;
 };
 
-std::ostream & operator << (std::ostream & oss, const Token & tok);
+ostream & operator << (ostream & oss, const Token & tok);
 
 
 class Tokenizer {
 public:
 	Tokenizer ();
-	Tokenizer (bool nocase_n);
 	Tokenizer (TypeToken ttok);
 	Tokenizer (const Tokenizer & tz);
-	Tokenizer (const std::string & line, bool nocase_n);
+	Tokenizer (const string & line, AsmMode asmmode);
 	~Tokenizer ();
+
 	Tokenizer & operator = (const Tokenizer &);
 
-	bool getnocase () const { return nocase; }
 	void push_back (const Token & tok);
 
 	bool empty () const;
-	bool endswithparen () const;
 
 	void reset ();
+
+	Token getrawtoken ();
 	Token gettoken ();
+	Token getmacroarg ();
+	Token getincludefile ();
+
 	void ungettoken ();
-	std::string getincludefile ();
 
-	friend std::ostream & operator << (std::ostream & oss,
+
+	friend ostream & operator << (ostream & oss,
 		const Tokenizer & tz);
-private:
-	typedef std::deque <Token> tokenlist_t;
-	tokenlist_t tokenlist;
-	tokenlist_t::iterator current;
 
-	size_t endpassed;
-	bool nocase;
+	class Internal;
+private:
+	Internal * pin;
+	Internal & in ();
+	const Internal & in () const;
 };
+
+
+} // namespace impl
+} // namespace pasmo
 
 
 #endif

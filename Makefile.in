@@ -16,9 +16,7 @@
 
 # Makefile.am for Pasmo
 
-srcdir = @srcdir@
 top_srcdir = @top_srcdir@
-VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
 pkgincludedir = $(includedir)/@PACKAGE@
@@ -36,12 +34,17 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
+build_triplet = @build@
+host_triplet = @host@
 bin_PROGRAMS = pasmo$(EXEEXT)
-subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(top_srcdir)/configure AUTHORS COPYING \
-	ChangeLog INSTALL NEWS depcomp install-sh missing \
-	mkinstalldirs
+	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	$(srcdir)/config_debug.h.in $(srcdir)/config_ostream.h.in \
+	$(srcdir)/config_types.h.in $(srcdir)/config_version.h.in \
+	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
+	THANKS config.guess config.sub depcomp install-sh missing \
+	mkinstalldirs parser.cxx parser.h
+subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -49,16 +52,24 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno configure.status.lineno
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
+CONFIG_HEADER = config.h config_debug.h config_version.h \
+	config_types.h config_ostream.h
 CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_pasmo_OBJECTS = asm.$(OBJEXT) asmfile.$(OBJEXT) cpc.$(OBJEXT) \
-	pasmo.$(OBJEXT) pasmotypes.$(OBJEXT) spectrum.$(OBJEXT) \
-	tap.$(OBJEXT) token.$(OBJEXT) tzx.$(OBJEXT)
+am_pasmo_OBJECTS = asm.$(OBJEXT) asmfile.$(OBJEXT) asmimpl.$(OBJEXT) \
+	asmimplparse.$(OBJEXT) asmreal.$(OBJEXT) codeaux.$(OBJEXT) \
+	cpc.$(OBJEXT) local.$(OBJEXT) machine.$(OBJEXT) \
+	macro.$(OBJEXT) macroframe.$(OBJEXT) module.$(OBJEXT) \
+	nullstream.$(OBJEXT) parser.$(OBJEXT) parseraux.$(OBJEXT) \
+	pasmo.$(OBJEXT) pasmotypes.$(OBJEXT) relfile.$(OBJEXT) \
+	segment.$(OBJEXT) simpleinst.$(OBJEXT) spectrum.$(OBJEXT) \
+	tap.$(OBJEXT) token.$(OBJEXT) trace.$(OBJEXT) tzx.$(OBJEXT) \
+	value.$(OBJEXT) var.$(OBJEXT)
 pasmo_OBJECTS = $(am_pasmo_OBJECTS)
 pasmo_LDADD = $(LDADD)
-DEFAULT_INCLUDES = -I. -I$(srcdir)
+DEFAULT_INCLUDES = -I. -I$(srcdir) -I. -I. -I. -I. -I.
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
@@ -66,6 +77,7 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
+YACCCOMPILE = $(YACC) $(YFLAGS) $(AM_YFLAGS)
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 CCLD = $(CC)
@@ -85,6 +97,8 @@ DIST_ARCHIVES = $(distdir).tar.gz
 GZIP_ENV = --best
 distuninstallcheck_listfiles = find . -type f -print
 distcleancheck_listfiles = find . -type f -print
+srcdir = @srcdir@
+VPATH = @srcdir@
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
 AMDEP_TRUE = @AMDEP_TRUE@
@@ -95,6 +109,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CPPFLAGS = @CPPFLAGS@
 CXX = @CXX@
+CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
@@ -103,7 +118,9 @@ DEPDIR = @DEPDIR@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
+EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+GREP = @GREP@
 INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
@@ -125,6 +142,8 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
 VERSION = @VERSION@
+YACC = @YACC@
+YFLAGS = @YFLAGS@
 ac_ct_CXX = @ac_ct_CXX@
 am__fastdepCXX_FALSE = @am__fastdepCXX_FALSE@
 am__fastdepCXX_TRUE = @am__fastdepCXX_TRUE@
@@ -134,13 +153,21 @@ am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
 bindir = @bindir@
+build = @build@
 build_alias = @build_alias@
+build_cpu = @build_cpu@
+build_os = @build_os@
+build_vendor = @build_vendor@
 datadir = @datadir@
 datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+host = @host@
 host_alias = @host_alias@
+host_cpu = @host_cpu@
+host_os = @host_os@
+host_vendor = @host_vendor@
 htmldir = @htmldir@
 includedir = @includedir@
 infodir = @infodir@
@@ -165,66 +192,74 @@ pasmo_SOURCES = \
 	asm.cpp \
 	asmfile.h \
 	asmfile.cpp \
+	asmimpl.h \
+	asmimpl.cpp \
+	asmimplparse.cpp \
+	asmreal.h \
+	asmreal.cpp \
+	codeaux.h \
+	codeaux.cpp \
 	cpc.h \
 	cpc.cpp \
+	local.h \
+	local.cpp \
+	machine.h \
+	machine.cpp \
+	macro.h \
+	macro.cpp \
+	macroframe.h \
+	macroframe.cpp \
+	module.h \
+	module.cpp \
+	nullstream.h \
+	nullstream.cpp \
+	parser.yxx \
+	parseraux.h \
+	parseraux.cpp \
+	parsertypes.h \
 	pasmo.cpp \
+	pasmoimpl.h \
 	pasmotypes.h \
 	pasmotypes.cpp \
+	relfile.h \
+	relfile.cpp \
+	segment.h \
+	segment.cpp \
+	simpleinst.h \
+	simpleinst.cpp \
 	spectrum.h \
 	spectrum.cpp \
 	tap.h \
 	tap.cpp \
 	token.h \
 	token.cpp \
+	trace.h \
+	trace.cpp \
 	tzx.h \
-	tzx.cpp
+	tzx.cpp \
+	value.h \
+	value.cpp \
+	var.h \
+	var.cpp
 
-EXAMPLE_ASM = \
-	align.asm \
-	all.asm \
-	allb.asm \
-	alocal.asm \
-	bad.asm \
-	black.asm \
-	callvers.asm \
-	defb.asm \
-	echovers.asm \
-	fill8k.asm \
-	hellocpc.asm \
-	hellocpm.asm \
-	hellospec.asm \
-	hilo.asm \
-	hola.asm \
-	if.asm \
-	include.asm \
-	indent.asm \
-	jumptable.asm \
-	lee.asm \
-	limit64.asm \
-	local.asm \
-	macro.asm \
-	mas.asm \
-	protector.asm \
-	rept.asm \
-	reserv.asm \
-	showfcb.asm \
-	showkeys.asm \
-	showline.asm \
-	t86.asm \
-	test.asm \
-	tmacro.asm \
-	undoc.asm
+BUILT_SOURCES = parser.h parser.cxx
+AM_YFLAGS = -d
 
+#*************************************************
 EXTRA_DIST = \
 	bootstrap autogen.sh \
-	pasmodoc.html \
-	$(EXAMPLE_ASM)
+	do_conf \
+	do_confnodeb \
+	do_conf0 \
+	do_confmingw \
+	pasmodoc.html
 
 ACLOCAL_AMFLAGS = -I .
-all: all-am
+all: $(BUILT_SOURCES) config.h config_debug.h config_version.h config_types.h config_ostream.h
+	$(MAKE) $(AM_MAKEFLAGS) all-am
 
 .SUFFIXES:
-.SUFFIXES: .cpp .o .obj
+.SUFFIXES: .cpp .cxx .o .obj .yxx
 am--refresh:
 	@:
 $(srcdir)/Makefile.in:  $(srcdir)/Makefile.am  $(am__configure_deps)
@@ -258,6 +293,63 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 	cd $(srcdir) && $(AUTOCONF)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(srcdir) && $(ACLOCAL) $(ACLOCAL_AMFLAGS)
+
+config.h: stamp-h1
+	@if test ! -f $@; then \
+	  rm -f stamp-h1; \
+	  $(MAKE) stamp-h1; \
+	else :; fi
+
+stamp-h1: $(srcdir)/config.h.in $(top_builddir)/config.status
+	@rm -f stamp-h1
+	cd $(top_builddir) && $(SHELL) ./config.status config.h
+$(srcdir)/config.h.in:  $(am__configure_deps) 
+	cd $(top_srcdir) && $(AUTOHEADER)
+	rm -f stamp-h1
+	touch $@
+
+config_debug.h: stamp-h2
+	@if test ! -f $@; then \
+	  rm -f stamp-h2; \
+	  $(MAKE) stamp-h2; \
+	else :; fi
+
+stamp-h2: $(srcdir)/config_debug.h.in $(top_builddir)/config.status
+	@rm -f stamp-h2
+	cd $(top_builddir) && $(SHELL) ./config.status config_debug.h
+
+config_version.h: stamp-h3
+	@if test ! -f $@; then \
+	  rm -f stamp-h3; \
+	  $(MAKE) stamp-h3; \
+	else :; fi
+
+stamp-h3: $(srcdir)/config_version.h.in $(top_builddir)/config.status
+	@rm -f stamp-h3
+	cd $(top_builddir) && $(SHELL) ./config.status config_version.h
+
+config_types.h: stamp-h4
+	@if test ! -f $@; then \
+	  rm -f stamp-h4; \
+	  $(MAKE) stamp-h4; \
+	else :; fi
+
+stamp-h4: $(srcdir)/config_types.h.in $(top_builddir)/config.status
+	@rm -f stamp-h4
+	cd $(top_builddir) && $(SHELL) ./config.status config_types.h
+
+config_ostream.h: stamp-h5
+	@if test ! -f $@; then \
+	  rm -f stamp-h5; \
+	  $(MAKE) stamp-h5; \
+	else :; fi
+
+stamp-h5: $(srcdir)/config_ostream.h.in $(top_builddir)/config.status
+	@rm -f stamp-h5
+	cd $(top_builddir) && $(SHELL) ./config.status config_ostream.h
+
+distclean-hdr:
+	-rm -f config.h stamp-h1 config_debug.h stamp-h2 config_version.h stamp-h3 config_types.h stamp-h4 config_ostream.h stamp-h5
 install-binPROGRAMS: $(bin_PROGRAMS)
 	@$(NORMAL_INSTALL)
 	test -z "$(bindir)" || $(mkdir_p) "$(DESTDIR)$(bindir)"
@@ -281,6 +373,11 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
+parser.h: parser.cxx
+	@if test ! -f $@; then \
+	  rm -f parser.cxx; \
+	  $(MAKE) parser.cxx; \
+	else :; fi
 pasmo$(EXEEXT): $(pasmo_OBJECTS) $(pasmo_DEPENDENCIES) 
 	@rm -f pasmo$(EXEEXT)
 	$(CXXLINK) $(pasmo_LDFLAGS) $(pasmo_OBJECTS) $(pasmo_LDADD) $(LIBS)
@@ -293,13 +390,31 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asm.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asmfile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asmimpl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asmimplparse.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asmreal.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/codeaux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpc.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/local.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/machine.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/macro.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/macroframe.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/nullstream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parseraux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasmo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasmotypes.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/relfile.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/segment.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/simpleinst.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/spectrum.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tap.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/token.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tzx.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/value.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/var.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -314,6 +429,41 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.cxx.o:
+@am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ $<
+
+.cxx.obj:
+@am__fastdepCXX_TRUE@	if $(CXXCOMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ `$(CYGPATH_W) '$<'`; \
+@am__fastdepCXX_TRUE@	then mv -f "$(DEPDIR)/$*.Tpo" "$(DEPDIR)/$*.Po"; else rm -f "$(DEPDIR)/$*.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.yxx.cxx:
+	$(YACCCOMPILE) $<
+	if test -f y.tab.h; then \
+	  to=`echo "$*_H" | sed \
+                -e 'y/abcdefghijklmnopqrstuvwxyz/ABCDEFGHIJKLMNOPQRSTUVWXYZ/' \
+                -e 's/[^ABCDEFGHIJKLMNOPQRSTUVWXYZ]/_/g'`; \
+	  sed -e "/^#/!b" -e "s/Y_TAB_H/$$to/g" -e "s|y\.tab\.h|$*.h|" \
+            y.tab.h >$*.ht; \
+	  rm -f y.tab.h; \
+	  if cmp -s $*.ht $*.h; then \
+	    rm -f $*.ht ;\
+	  else \
+	    mv $*.ht $*.h; \
+	  fi; \
+	fi
+	if test -f y.output; then \
+	  mv y.output $*.output; \
+	fi
+	sed '/^#/ s|y\.tab\.c|$@|' y.tab.c >$@t && mv $@t $@
+	rm -f y.tab.c
 uninstall-info-am:
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
@@ -326,11 +476,11 @@ ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	mkid -fID $$unique
 tags: TAGS
 
-TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+TAGS:  $(HEADERS) $(SOURCES) config.h.in config_debug.h.in config_version.h.in config_types.h.in config_ostream.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) config.h.in config_debug.h.in config_version.h.in config_types.h.in config_ostream.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -342,11 +492,11 @@ TAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
 	    $$tags $$unique; \
 	fi
 ctags: CTAGS
-CTAGS:  $(HEADERS) $(SOURCES)  $(TAGS_DEPENDENCIES) \
+CTAGS:  $(HEADERS) $(SOURCES) config.h.in config_debug.h.in config_version.h.in config_types.h.in config_ostream.h.in $(TAGS_DEPENDENCIES) \
 		$(TAGS_FILES) $(LISP)
 	tags=; \
 	here=`pwd`; \
-	list='$(SOURCES) $(HEADERS)  $(LISP) $(TAGS_FILES)'; \
+	list='$(SOURCES) $(HEADERS) config.h.in config_debug.h.in config_version.h.in config_types.h.in config_ostream.h.in $(LISP) $(TAGS_FILES)'; \
 	unique=`for i in $$list; do \
 	    if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
 	  done | \
@@ -491,13 +641,16 @@ distcleancheck: distclean
 	       $(distcleancheck_listfiles) ; \
 	       exit 1; } >&2
 check-am: all-am
-check: check-am
-all-am: Makefile $(PROGRAMS)
+check: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) check-am
+all-am: Makefile $(PROGRAMS) config.h config_debug.h config_version.h \
+		config_types.h config_ostream.h
 installdirs:
 	for dir in "$(DESTDIR)$(bindir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
-install: install-am
+install: $(BUILT_SOURCES)
+	$(MAKE) $(AM_MAKEFLAGS) install-am
 install-exec: install-exec-am
 install-data: install-data-am
 uninstall: uninstall-am
@@ -521,6 +674,9 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
+	-rm -f parser.cxx
+	-rm -f parser.h
+	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
 clean-am: clean-binPROGRAMS clean-generic mostlyclean-am
@@ -530,7 +686,7 @@ distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+	distclean-hdr distclean-tags
 
 dvi: dvi-am
 
@@ -576,15 +732,16 @@ uninstall-am: uninstall-binPROGRAMS uninstall-info-am
 .PHONY: CTAGS GTAGS all all-am am--refresh check check-am clean \
 	clean-binPROGRAMS clean-generic ctags dist dist-all dist-bzip2 \
 	dist-gzip dist-shar dist-tarZ dist-zip distcheck distclean \
-	distclean-compile distclean-generic distclean-tags \
-	distcleancheck distdir distuninstallcheck dvi dvi-am html \
-	html-am info info-am install install-am install-binPROGRAMS \
-	install-data install-data-am install-exec install-exec-am \
-	install-info install-info-am install-man install-strip \
-	installcheck installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic pdf pdf-am ps ps-am tags uninstall \
-	uninstall-am uninstall-binPROGRAMS uninstall-info-am
+	distclean-compile distclean-generic distclean-hdr \
+	distclean-tags distcleancheck distdir distuninstallcheck dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-binPROGRAMS install-data install-data-am install-exec \
+	install-exec-am install-info install-info-am install-man \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic pdf pdf-am ps ps-am \
+	tags uninstall uninstall-am uninstall-binPROGRAMS \
+	uninstall-info-am
 
 
 tgz: dist

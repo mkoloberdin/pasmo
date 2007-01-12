@@ -1,13 +1,15 @@
 // tzx.cpp
-// Revision 4-dec-2004
+// Revision 9-aug-2005
 
 #include "tzx.h"
 
 #include "pasmotypes.h"
 
-#include <assert.h>
+#include "trace.h"
 
-#define ASSERT assert
+
+namespace pasmo {
+
 
 void tzx::writefilehead (std::ostream & out)
 {
@@ -46,5 +48,7 @@ void tzx::writeturboblockhead (std::ostream & out, size_t len)
 	putword (out, len & 0xFFFF);
 	out.put ( (len >> 16) & 0xFF);
 }
+
+} // namespace pasmo
 
 // End of tzx.cpp

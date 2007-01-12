@@ -1,11 +1,15 @@
 // spectrum.cpp
-// Revision 13-dec-2004
+// Revision 11-aug-2005
 
 
 #include "spectrum.h"
 
 #include <sstream>
 #include <algorithm>
+
+
+namespace pasmo {
+
 
 using std::fill;
 using std::copy;
@@ -19,9 +23,7 @@ spectrum::Plus3Head::Plus3Head ()
 		1,    // Issue number.
 		0,    // Version number.
 	};
-	//memset (plus3, 0, headsize);
 	fill (plus3, plus3 + headsize, byte (0) );
-	//memcpy (plus3, ident, sizeof (ident) );
 	copy (ident, ident + sizeof (ident), plus3);
 
 	plus3 [15]= 3; // Type: code.
@@ -67,20 +69,20 @@ void spectrum::Plus3Head::write (std::ostream & out)
 // Spectrum Basic generation.
 
 
-const std::string spectrum::tokNumPrefix (1, '\x0E');
-const std::string spectrum::tokEndLine   (1, '\x0D');
-const std::string spectrum::tokCODE      (1, '\xAF');
-const std::string spectrum::tokUSR       (1, '\xC0');
-const std::string spectrum::tokLOAD      (1, '\xEF');
-const std::string spectrum::tokPOKE      (1, '\xF4');
-const std::string spectrum::tokRANDOMIZE (1, '\xF9');
-const std::string spectrum::tokCLEAR     (1, '\xFD');
+const string spectrum::tokNumPrefix (1, '\x0E');
+const string spectrum::tokEndLine   (1, '\x0D');
+const string spectrum::tokCODE      (1, '\xAF');
+const string spectrum::tokUSR       (1, '\xC0');
+const string spectrum::tokLOAD      (1, '\xEF');
+const string spectrum::tokPOKE      (1, '\xF4');
+const string spectrum::tokRANDOMIZE (1, '\xF9');
+const string spectrum::tokCLEAR     (1, '\xFD');
 
-std::string spectrum::number (address n)
+string spectrum::number (address n)
 {
 	std::ostringstream oss;
 	oss << n;
-	std::string str (oss.str () );
+	string str (oss.str () );
 	str+= tokNumPrefix;
 
 	// Special format of Spectrum numbers for integers.
@@ -94,28 +96,29 @@ std::string spectrum::number (address n)
 	return str;
 }
 
-std::string spectrum::linenumber (address n)
+string spectrum::linenumber (address n)
 {
-	std::string str (1, hibyte (n) );
+	string str (1, hibyte (n) );
 	str+= lobyte (n);
 	return str;
 }
 
-std::string spectrum::linelength (address n)
+string spectrum::linelength (address n)
 {
-	std::string str (1, lobyte (n) );
+	string str (1, lobyte (n) );
 	str+= hibyte (n);
 	return str;
 }
 
-std::string spectrum::basicline (address linenum, const std::string & line)
+string spectrum::basicline (address linenum, const string & line)
 {
-	std::string result (linenumber (linenum) );
+	string result (linenumber (linenum) );
 	result+= linelength (static_cast <address> (line.size () ) + 1);
 	result+= line;
 	result+= tokEndLine;
 	return result;
 }
 
+} // namespace pasmo
 
 // End of spectrum.cpp

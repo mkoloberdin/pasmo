@@ -1,5 +1,5 @@
 // cpc.cpp
-// Revision 13-dec-2004
+// Revision 11-aug-2005
 
 
 #include "cpc.h"
@@ -8,6 +8,10 @@
 #include <stdexcept>
 
 #include <stdlib.h>
+
+
+namespace pasmo {
+
 
 using std::fill;
 using std::logic_error;
@@ -49,7 +53,7 @@ cpc::Header::Header ()
 	clear ();
 }
 
-cpc::Header::Header (const std::string & filename)
+cpc::Header::Header (const string & filename)
 {
 	clear ();
 	setfilename (filename);
@@ -57,18 +61,17 @@ cpc::Header::Header (const std::string & filename)
 
 void cpc::Header::clear ()
 {
-	//memset (data, 0, headsize);
 	fill (data, data + headsize, byte (0) );
 }
 
-void cpc::Header::setfilename (const std::string & filename)
+void cpc::Header::setfilename (const string & filename)
 {
-	std::string::size_type l= filename.size ();
+	string::size_type l= filename.size ();
 	if (l > 16)
 		l= 16;
-	for (std::string::size_type i= 0; i < l; ++i)
+	for (string::size_type i= 0; i < l; ++i)
 		data [i]= filename [i];
-	for (std::string::size_type i= l; i < 16; ++i)
+	for (string::size_type i= l; i < 16; ++i)
 		data [i]= '\0';
 }
 
@@ -149,7 +152,7 @@ cpc::AmsdosHeader::AmsdosHeader ()
 	clear ();
 }
 
-cpc::AmsdosHeader::AmsdosHeader (const std::string & filename)
+cpc::AmsdosHeader::AmsdosHeader (const string & filename)
 {
 	clear ();
 	setfilename (filename);
@@ -157,21 +160,20 @@ cpc::AmsdosHeader::AmsdosHeader (const std::string & filename)
 
 void cpc::AmsdosHeader::clear ()
 {
-	//memset (amsdos, 0, headsize);
 	fill (amsdos, amsdos + headsize, byte (0) );
 	amsdos [0x12]= 2; // File type: binary.
 }
 
-void cpc::AmsdosHeader::setfilename (const std::string & filename)
+void cpc::AmsdosHeader::setfilename (const string & filename)
 {
 	amsdos [0]= 0; // User number.
 	// 01-0F: filename, padded with 0.
-	std::string::size_type l= filename.size ();
+	string::size_type l= filename.size ();
 	if (l > 15)
 		l= 15;
-	for (std::string::size_type i= 0; i < l; ++i)
+	for (string::size_type i= 0; i < l; ++i)
 		amsdos [i + 1]= filename [i];
-	for (std::string::size_type i= l; i < 15; ++i)
+	for (string::size_type i= l; i < 15; ++i)
 		amsdos [i + 1]= '\0';
 }
 
@@ -216,29 +218,31 @@ void cpc::AmsdosHeader::write (std::ostream & out)
 
 // CPC Locomotive Basic generation.
 
-const std::string cpc::tokHexNumber (1, '\x1C');
+const string cpc::tokHexNumber (1, '\x1C');
 
-const std::string cpc::tokCALL      (1, '\x83');
-const std::string cpc::tokLOAD      (1, '\xA8');
-const std::string cpc::tokMEMORY    (1, '\xAA');
+const string cpc::tokCALL      (1, '\x83');
+const string cpc::tokLOAD      (1, '\xA8');
+const string cpc::tokMEMORY    (1, '\xAA');
 
 
-std::string cpc::number (address n)
+string cpc::number (address n)
 {
-	std::string r (1, lobyte (n) );
+	string r (1, lobyte (n) );
 	r+= hibyte (n);
 	return r;
 }
 
-std::string cpc::hexnumber (address n)
+string cpc::hexnumber (address n)
 {
 	return tokHexNumber + number (n);
 }
 
-std::string cpc::basicline (address linenum, const std::string & line)
+string cpc::basicline (address linenum, const string & line)
 {
 	address linelen= static_cast <address> (line.size () + 5);
 	return number (linelen) + number (linenum) + line + '\0';
 }
+
+} // namespace pasmo
 
 // End of cpc.cpp

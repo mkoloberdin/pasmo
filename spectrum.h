@@ -2,13 +2,14 @@
 #define INCLUDE_SPECTRUM_H
 
 // spectrum.h
-// Revision 5-dec-2004
+// Revision 11-aug-2005
 
 #include "pasmotypes.h"
 
-#include <string>
 
+namespace pasmo {
 namespace spectrum {
+
 
 class Plus3Head {
 public:
@@ -25,23 +26,23 @@ private:
 // Spectrum Basic generation.
 
 
-extern const std::string tokNumPrefix;
-extern const std::string tokEndLine;
-extern const std::string tokCODE;
-extern const std::string tokUSR;
-extern const std::string tokLOAD;
-extern const std::string tokPOKE;
-extern const std::string tokRANDOMIZE;
-extern const std::string tokCLEAR;
+extern const string tokNumPrefix;
+extern const string tokEndLine;
+extern const string tokCODE;
+extern const string tokUSR;
+extern const string tokLOAD;
+extern const string tokPOKE;
+extern const string tokRANDOMIZE;
+extern const string tokCLEAR;
 
-std::string number (address n);
-std::string linenumber (address n);
-std::string linelength (address n);
-std::string basicline (address linenum, const std::string & line);
+string number (address n);
+string linenumber (address n);
+string linelength (address n);
+string basicline (address linenum, const string & line);
 
 
 } // namespace spectrum
-
+} // namespace pasmo
 
 #endif
 
