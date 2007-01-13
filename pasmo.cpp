@@ -1,5 +1,5 @@
 // pasmo.cpp
-// Revision 12-apr-2005
+// Revision 14-jan-2007
 
 #include "asm.h"
 
@@ -399,6 +399,9 @@ int main (int argc, char * * argv)
 		cerr << "ERROR: Unexpected exception.\n"
 			"Please send a bug report.\n";
 	}
+
+	// Added to fix Debian bug report #394733
+	return 1;
 }
 
 // End of pasmo.cpp

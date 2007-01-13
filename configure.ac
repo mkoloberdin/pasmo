@@ -4,7 +4,7 @@
 
 AC_PREREQ(2.57)
 
-AC_INIT(pasmo, 0.5.2, julian.notfound@gmail.com)
+AC_INIT(pasmo, 0.5.3, julian.notfound@gmail.com)
 
 AM_INIT_AUTOMAKE
 

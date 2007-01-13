@@ -3,14 +3,14 @@
 
 
 
-	ESPA—OL.
+	ESPA√ëOL.
 
 
 	Pasmo, ensablador Z80 cruzado multiplataforma.
-	(C) 2004-2005 Juli·n Albo
-	UtilizaciÛn y distribuciÛn permitida bajo la licencia GPL.
+	(C) 2004-2007 Juli√°n Albo
+	Utilizaci√≥n y distribuci√≥n permitida bajo la licencia GPL.
 
-	Para descargar actualizaciones o obtener m·s informaciÛn:
+	Para descargar actualizaciones o obtener m√°s informaci√≥n:
 	http://www.arrakis.es/~ninsesabe/pasmo/
 
 	Para compilar:
@@ -23,9 +23,9 @@
 	Para compilar con otras opciones:
 		./configure --help
 
-	DocumentaciÛn: Disponible solamente en inglÈs, en el fichero
+	Documentaci√≥n: Disponible solamente en ingl√©s, en el fichero
 	pasmodoc.html incluido en este paquete o en el sitio web de
-	Pasmo. Ver tambiÈn los ficheros .asm de ejemplo incluidos en
+	Pasmo. Ver tambi√©n los ficheros .asm de ejemplo incluidos en
 	el paquete de los fuentes.
 
 	Para ensamblar:
@@ -34,18 +34,18 @@
 
 	Opciones:
 
-		-d         -->	Mostrar informaciÛn de depuraciÛn
+		-d         -->	Mostrar informaci√≥n de depuraci√≥n
 				durante el ensamblado.
 
-		-1         -->	Mostrar informaciÛn de depuraciÛn
-				durante el ensamblado, tambiÈn en
+		-1         -->	Mostrar informaci√≥n de depuraci√≥n
+				durante el ensamblado, tambi√©n en
 				el primer paso.
 
-		-v         -->	Verboso. Muestra informaciÛn de
+		-v         -->	Verboso. Muestra informaci√≥n de
 				progreso del ensamblado.
 
-		-I         -->	AÒadir directorio a la lista de
-				directorios en los que se buscar·n
+		-I         -->	A√±adir directorio a la lista de
+				directorios en los que se buscar√°n
 				ficheros para INCLUDE e INCBIN.
 
 		--bin      -->	Generar el fichero objeto en binario
@@ -72,14 +72,14 @@
 		--cdt      -->	Generar un fichero .cdt para emuladores
 				de Amstrad CPC (imagen de cinta).
 
-		--tapbas   -->	Igual que que la opciÛn --tap pero
-				aÒadiendo un cargador Basic.
+		--tapbas   -->	Igual que que la opci√≥n --tap pero
+				a√±adiendo un cargador Basic.
 
-		--tzxbas   -->	Igual que que la opciÛn --tzx pero
-				aÒadiendo un cargador Basic.
+		--tzxbas   -->	Igual que que la opci√≥n --tzx pero
+				a√±adiendo un cargador Basic.
 
-		--cdtbas   -->	Igual que que la opciÛn --cdt pero
-				aÒadiendo un cargador Basic.
+		--cdtbas   -->	Igual que que la opci√≥n --cdt pero
+				a√±adiendo un cargador Basic.
 
 		--amsdos   -->	Generar el fichero objeto con cabecera
 				Amsdos (Amstrad CPC disco).
@@ -87,7 +87,7 @@
 		--msx      -->	Generar el fichero objeto con cabecera
 				para usarse con BLOAD en MSX Basic.
 
-		--public   -->	El listado de sÌmbolos incluir· sÛlo los
+		--public   -->	El listado de s√≠mbolos incluir√° s√≥lo los
 				declarados PUBLIC.
 
 		--name     -->	Nombre para la cabecera en los formatos
@@ -95,19 +95,19 @@
 				el nombre del fichero objeto).
 
 		--err      -->	Dirige los mensajes de error a la salida
-				est·ndar en vez de a la salida de error
+				est√°ndar en vez de a la salida de error
 				(excepto los errores en las opciones).
 
 		--nocase   -->	Hace que los identificadores no distingan
-				may˙sculas de min˙sculas.
+				may√∫sculas de min√∫sculas.
 
 		--alocal   -->	Modo autolocal: las etiquetas que comienzan
-				por un '_' son locales y su ·mbito termina
+				por un '_' son locales y su √°mbito termina
 				en la sigiente etiqueta no local o en la
 				siguiente directiva PROC, LOCAL o MACRO.
 
 		-B
-		--bracket  -->	Modo sÛlo corchetes: los parÈntesis quedan
+		--bracket  -->	Modo s√≥lo corchetes: los par√©ntesis quedan
 				reservados para expresiones.
 
 		-E
@@ -117,20 +117,20 @@
 		--w8080    -->	Mostrar warning cuando se usan instrucciones
 				del z80 que no exsiten en el 8080.
 
-		--86       -->	Generar cÛdigo 8086.
+		--86       -->	Generar c√≥digo 8086.
 
 		-          -->	Fin de opciones, todo lo que siga se
 				consideran nombres de fichero aunque
 				comience por -.
 
 
-	Si no hay ninguna opciÛn de formato de objeto se asume --bin.
+	Si no hay ninguna opci√≥n de formato de objeto se asume --bin.
 
-	La informaciÛn de depuraciÛn va a la salida est·ndar, los errores
+	La informaci√≥n de depuraci√≥n va a la salida est√°ndar, los errores
 a la salida de error.
 
 
-Comentarios y crÌticas a: julian.notfound@gmail.com
+Comentarios y cr√≠ticas a: julian.notfound@gmail.com
 
 
 		*		*		*
@@ -141,7 +141,7 @@ Comentarios y crÌticas a: julian.notfound@gmail.com
 
 
 	Pasmo, multiplatform Z80 cross-assembler.
-	(C) 2004-2005 Juli·n Albo
+	(C) 2004-2007 Juli√°n Albo
 	Use and distribution allowed under the terms of the GPL license.
 
 	To download updates or obtain more information:
