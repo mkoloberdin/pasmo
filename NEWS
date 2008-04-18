@@ -1,3 +1,11 @@
+	Version 0.5.4.beta2
+
+Added third pass option and automatic switch to it on phase errors.
+
+	Version 0.5.4.beta1
+
+Phase error detection. Debug build option added.
+
 	Version 0.5.3
 
 Fixed bug: several errors give exit status 0.

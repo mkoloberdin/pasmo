@@ -1,5 +1,5 @@
 // asm.cpp
-// Revision 18-apr-2005
+// Revision 17-apr-2008
 
 #include "asm.h"
 #include "token.h"
@@ -10,6 +10,8 @@
 #include "tzx.h"
 
 #include "spectrum.h"
+
+#include "trace.h"
 
 
 #include <iostream>
@@ -25,9 +27,6 @@
 #include <algorithm>
 
 #include <ctype.h>
-
-#include <assert.h>
-#define ASSERT assert
 
 using std::cout;
 using std::cerr;
@@ -140,6 +139,13 @@ class UndefinedVar : public runtime_error {
 public:
 	UndefinedVar (const std::string & varname) :
 		runtime_error ("Symbol '" + varname + "' is undefined")
+	{ }
+};
+
+class PhaseError : public runtime_error {
+public:
+	PhaseError (const std::string & varname) :
+		runtime_error ("Phase error in '" + varname + "'")
 	{ }
 };
 
@@ -856,6 +862,7 @@ public:
 	void bracketonly ();
 	void warn8080 ();
 	void set86 ();
+	void setpass3 ();
 
 	void addpredef (const std::string & predef);
 	void setheadername (const std::string & headername_n);
@@ -1114,6 +1121,7 @@ private:
 	address entrypoint;
 	bool hasentrypoint;
 	int pass;
+	int lastpass;
 	size_t iflevel;
 
 	// ********** Symbol tables ************
@@ -1313,6 +1321,7 @@ Asm::In::In () :
 	maxused (0),
 	hasentrypoint (false),
 	pass (0),
+	lastpass (2),
 	pout (& cout),
 	perr (& cerr),
 	pverb (& nullout),
@@ -1404,6 +1413,11 @@ void Asm::In::set86 ()
 {
 	genmode= gen86;
 	mode86= true;
+}
+
+void Asm::In::setpass3 ()
+{
+	lastpass= 3;
 }
 
 void Asm::In::addpredef (const std::string & predef)
@@ -1562,11 +1576,48 @@ void Asm::In::gencodeword (address value)
 bool Asm::In::setvar (const std::string & varname,
 	address value, Defined defined)
 {
+	TRFDEBS ("Set '" << varname << "' to " << value);
+
 	checkautolocal (varname);
 	mapvar_t::iterator it= mapvar.find (varname);
 	if (it != mapvar.end () )
 	{
+		// Testing detection of Phase error
+		#if 1
+
+		switch (defined)
+		{
+		case DefinedPass2:
+			{
+				address oldval= it->second.getvalue ();
+				if (pass == lastpass && oldval != value)
+				{
+					if (pass == 2)
+					{
+						emitwarning ("Switching to 3 pass mode");
+						lastpass= 3;
+					}
+					else
+					{
+					TRDEBS ("Phase change in '" <<
+						varname << "' from " <<
+						oldval << " to " <<
+						value);
+					throw PhaseError (varname);
+					}
+				}
+			}
+			break;
+		default:
+			/* Nothing */;
+		}
 		it->second.set (value, defined);
+
+		#else
+
+		it->second.set (value, defined);
+
+		#endif
 		return it->second.islocal ();
 	}
 	else
@@ -1580,18 +1631,25 @@ bool Asm::In::setvar (const std::string & varname,
 address Asm::In::getvalue (const std::string & var,
 	bool required, bool ignored)
 {
+	TRF;
+
 	checkautolocal (var);
 
 	VarData & vd= mapvar [var];
 	if (vd.def () == NoDefined)
 	{
+		TRDEBS (var << " not yet defined");
 		if ( (pass > 1 || required) && ! ignored)
 			throw UndefinedVar (var);
 		else
 			return 0;
 	}
 	else
-		return vd.getvalue ();
+	{
+		address r= vd.getvalue ();
+		TRDEBS (var << " is " << r);
+		return r;
+	}
 }
 
 bool Asm::In::isdefined (const std::string & varname)
@@ -1611,6 +1669,8 @@ bool Asm::In::isdefined (const std::string & varname)
 void Asm::In::parsevalue (Tokenizer & tz, address & result,
 	bool required, bool ignored)
 {
+	TRF;
+
 	Token tok= tz.gettoken ();
 	switch (tok.type () )
 	{
@@ -2001,6 +2061,8 @@ void Asm::In::parsebase (Tokenizer & tz, address & result,
 address Asm::In::parseexpr (bool required, const Token & /* tok */,
 	Tokenizer & tz)
 {
+	TRF;
+
 	tz.ungettoken ();
 	address result;
 	parsebase (tz, result, required, false);
@@ -2205,6 +2267,8 @@ void Asm::In::parseENDIF (Tokenizer & tz)
 
 void Asm::In::parseline (Tokenizer & tz)
 {
+	TRF;
+
 	Token tok= tz.gettoken ();
 
 	currentinstruction= current;
@@ -2337,6 +2401,8 @@ public:
 
 void Asm::In::dopass ()
 {
+	TRFDEBS ("Pass " << pass);
+
 	* pverb << "Entering pass " << pass << endl;
 
 	// Pass initializition.
@@ -2386,6 +2452,8 @@ void Asm::In::loadfile (const std::string & filename)
 
 void Asm::In::processfile ()
 {
+	TRF;
+
 	try 
 	{
 		pass= 1;
@@ -2401,6 +2469,13 @@ void Asm::In::processfile ()
 		else
 			pout= & nullout;
 		dopass ();
+
+		// Testing third pass
+		if (lastpass > 2)
+		{
+			pass= 3;
+			dopass ();
+		}
 
 		// Keep pout pointing to something valid.
 		pout= & cout;
@@ -2457,6 +2532,8 @@ bool Asm::In::parsesimple (Tokenizer & tz, Token tok)
 
 void Asm::In::parsegeneric (Tokenizer & tz, Token tok)
 {
+	TRF;
+
 	firstcode= true;
 	if (parsesimple (tz, tok) )
 		return;
@@ -2654,6 +2731,8 @@ void Asm::In::parseEndOfInclude (Tokenizer & /*tz*/)
 
 void Asm::In::parseORG (Tokenizer & tz, const std::string & label)
 {
+	TRF;
+
 	Token tok= tz.gettoken ();
 	address org= parseexpr (true, tok, tz);
 	current= org;
@@ -2666,6 +2745,8 @@ void Asm::In::parseORG (Tokenizer & tz, const std::string & label)
 
 void Asm::In::parseEQU (Tokenizer & tz, const std::string & label)
 {
+	TRF;
+
 	Token tok= tz.gettoken ();
 	address value= parseexpr (false, tok, tz);
 	checkendline (tz);
@@ -2812,6 +2893,8 @@ void Asm::In::parse_WARNING (Tokenizer & tz)
 
 bool Asm::In::setequorlabel (const std::string & name, address value)
 {
+	TRFDEBS ("Set '" << name << "' to " << value);
+
 	if (autolocalmode)
 	{
 		if (isautolocalname (name) )
@@ -2842,7 +2925,14 @@ bool Asm::In::setequorlabel (const std::string & name, address value)
 		break;
 	case DefinedPass2:
 		ASSERT (pass > 1);
+
+		// Testing third pass
+		#if 0
 		throw RedefinedEQU;
+		#else
+		if (pass == 2)
+			throw RedefinedEQU;
+		#endif
 	}
 	Defined def;
 	switch (pass)
@@ -2852,6 +2942,9 @@ bool Asm::In::setequorlabel (const std::string & name, address value)
 	case 1:
 		def= DefinedPass1; break;
 	case 2:
+		def= DefinedPass2; break;
+	case 3:
+		// Testing third pass
 		def= DefinedPass2; break;
 	default:
 		throw InvalidPassValue;
@@ -3649,6 +3742,8 @@ void Asm::In::parseLDsimple (Tokenizer & tz, regbCode regcode,
 void Asm::In::parseLDdouble_nn_ (Tokenizer & tz, regwCode regcode,
 	bool bracket, byte prefix)
 {
+	TRF;
+
 	Token tok= tz.gettoken ();
 	address value= parseexpr (false, tok, tz);
 	expectcloseindir (tz, bracket);
@@ -3707,6 +3802,8 @@ void Asm::In::parseLDdouble_nn_ (Tokenizer & tz, regwCode regcode,
 void Asm::In::parseLDdoublenn (Tokenizer & tz,
 	regwCode regcode, byte prefix)
 {
+	TRF;
+
 	Token tok;
 	address value= parseexpr (false, tok, tz);
 	checkendline (tz);
@@ -3735,6 +3832,8 @@ void Asm::In::parseLDdoublenn (Tokenizer & tz,
 void Asm::In::parseLDdouble (Tokenizer & tz,
 	regwCode regcode, byte prefix)
 {
+	TRF;
+
 	ASSERT (regcode == regBC || regcode == regDE || regcode == regHL);
 	ASSERT (regcode == regHL || prefix == NoPrefix);
 	ASSERT (prefix == NoPrefix ||
@@ -4000,6 +4099,8 @@ void Asm::In::parseLDIorR (Tokenizer & tz, byte code)
 
 void Asm::In::parseLD (Tokenizer & tz)
 {
+	TRF;
+
 	Token tok= tz.gettoken ();
 	TypeToken tt= tok.type ();
 	switch (tt)
@@ -6425,6 +6526,11 @@ void Asm::set86 ()
 	pin->set86 ();
 }
 
+void Asm::setpass3 ()
+{
+	pin->setpass3 ();
+}
+
 void Asm::addincludedir (const std::string & dirname)
 {
 	pin->addincludedir (dirname);
@@ -6442,6 +6548,8 @@ void Asm::loadfile (const std::string & filename)
 
 void Asm::processfile ()
 {
+	TRF;
+
 	pin->processfile ();
 }
 

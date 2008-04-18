@@ -7,7 +7,7 @@
 
 
 	Pasmo, ensablador Z80 cruzado multiplataforma.
-	(C) 2004-2007 Julián Albo
+	(C) 2004-2008 Julián Albo
 	Utilización y distribución permitida bajo la licencia GPL.
 
 	Para descargar actualizaciones o obtener más información:
@@ -141,7 +141,7 @@ Comentarios y críticas a: julian.notfound@gmail.com
 
 
 	Pasmo, multiplatform Z80 cross-assembler.
-	(C) 2004-2007 Julián Albo
+	(C) 2004-2008 Julián Albo
 	Use and distribution allowed under the terms of the GPL license.
 
 	To download updates or obtain more information:

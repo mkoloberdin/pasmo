@@ -1,5 +1,5 @@
 // asm.h
-// Revision 21-dec-2004
+// Revision 15-apr-2008
 
 #include <iostream>
 #include <string>
@@ -29,6 +29,7 @@ public:
 	void bracketonly ();
 	void warn8080 ();
 	void set86 ();
+	void setpass3 ();
 
 	void addincludedir (const std::string & dirname);
 	void addpredef (const std::string & predef);

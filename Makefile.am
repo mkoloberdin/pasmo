@@ -18,6 +18,8 @@ pasmo_SOURCES = \
 	tap.cpp \
 	token.h \
 	token.cpp \
+	trace.h \
+	trace.cpp \
 	tzx.h \
 	tzx.cpp
 

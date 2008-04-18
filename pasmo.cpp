@@ -1,5 +1,5 @@
 // pasmo.cpp
-// Revision 14-jan-2007
+// Revision 15-apr-2008
 
 #include "asm.h"
 
@@ -70,6 +70,7 @@ const string opthex       ("--hex");
 const string optmsx       ("--msx");
 const string optname      ("--name");
 const string optnocase    ("--nocase");
+const string optpass3     ("--pass3");
 const string optplus3dos  ("--plus3dos");
 const string optprl       ("--prl");
 const string optpublic    ("--public");
@@ -89,6 +90,7 @@ public:
 	emitfunc_t getemit () const { return emitfunc; }
 	bool redirerr () const { return redirecterr; }
 	bool publiconly () const { return emitpublic; }
+	bool getpass3 () const { return pass3; }
 	string getfilein () const { return filein; }
 	string getfileout () const { return fileout; }
 	string getfilesymbol () const { return filesymbol; }
@@ -108,6 +110,7 @@ private:
 	bool bracketonly;
 	bool warn8080;
 	bool mode86;
+	bool pass3;
 
 	vector <string> includedir;
 	vector <string> labelpredef;
@@ -133,7 +136,8 @@ Options::Options (int argc, char * * argv) :
 	autolocal (false),
 	bracketonly (false),
 	warn8080 (false),
-	mode86 (false)
+	mode86 (false),
+	pass3 (false)
 {
 	int argpos;
 	for (argpos= 1; argpos < argc; ++argpos)
@@ -147,6 +151,8 @@ Options::Options (int argc, char * * argv) :
 			emitfunc= & Asm::emitprl;
 		else if (arg == optcmd)
 			emitfunc= & Asm::emitcmd;
+		else if (arg == optpass3)
+			pass3= true;
 		else if (arg == optplus3dos)
 			emitfunc= & Asm::emitplus3dos;
 		else if (arg == opttap)
@@ -277,6 +283,8 @@ void Options::apply (Asm & assembler) const
 		assembler.warn8080 ();
 	if (mode86)
 		assembler.set86 ();
+	if (pass3)
+		assembler.setpass3 ();
 
 	for (size_t i= 0; i < includedir.size (); ++i)
 		assembler.addincludedir (includedir [i] );
