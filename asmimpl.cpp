@@ -4986,10 +4986,10 @@ void AsmReal::writetzxcode (ostream & out)
 
 	// Write the data.
 
-	tzx::writestandardblockhead (out);
+	tzx::writestandardblockhead (out, 1000);
 	block1.write (out);
 
-	tzx::writestandardblockhead (out);
+	tzx::writestandardblockhead (out, 0);
 	block2.write (out);
 	if (! out)
 		throw ErrorOutput;
@@ -5249,10 +5249,10 @@ void AsmReal::emittzxbas (ostream & out)
 
 	tzx::writefilehead (out);
 
-	tzx::writestandardblockhead (out);
+	tzx::writestandardblockhead (out, 1000);
 	basicheadblock.write (out);
 
-	tzx::writestandardblockhead (out);
+	tzx::writestandardblockhead (out, 1000);
 	basicblock.write (out);
 
 	writetzxcode (out);

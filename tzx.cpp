@@ -21,12 +21,11 @@ void tzx::writefilehead (std::ostream & out)
 	out.write (tzxhead, sizeof (tzxhead) );
 }
 
-void tzx::writestandardblockhead (std::ostream & out)
+void tzx::writestandardblockhead (std::ostream & out, address pause)
 {
 	out.put ('\x10'); // Standard speed block.
-	address pause= 1000; // Pause after block in milisecs.
-	out.put (lobyte (pause) );
-	out.put (hibyte (pause) );
+	out.put (lobyte (pause) ); // Pause after block
+	out.put (hibyte (pause) ); // in milisecs.
 }
 
 void tzx::writeturboblockhead (std::ostream & out, size_t len)
