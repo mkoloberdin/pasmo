@@ -4,6 +4,7 @@
 // tzx.h
 // Revision 9-aug-2005
 
+#include "var.h"
 #include <iostream>
 
 #include <stdlib.h>
@@ -13,7 +14,7 @@ namespace tzx {
 
 void writefilehead (std::ostream & out);
 
-void writestandardblockhead (std::ostream & out);
+void writestandardblockhead (std::ostream & out, address pause);
 
 void writeturboblockhead (std::ostream & out, size_t len);
 
