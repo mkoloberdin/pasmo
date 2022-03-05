@@ -1,0 +1,10 @@
+#!/bin/sh
+
+#DEBUGOPT=--enable-debug
+
+./configure \
+	$DEBUGOPT \
+	CXXFLAGS='-O0 --std=c++14 -Wall -Wextra -Wunused -Werror -pedantic \
+	-g -fprofile-arcs -ftest-coverage' \
+	LDFLAGS='--coverage' \
+	LIBS='-lgcov'

@@ -4,7 +4,7 @@ bdos	equ 5
 
 	org 100h
 
-other:	
+other:
 	ld c, 6
 	; This works only in cp/m plus.
 	;ld e, 0FDh
@@ -58,7 +58,7 @@ showreg:
 
 	pop hl
 	pop bc
-	ret	
+	ret
 
 shownibble:
 	and 0Fh
@@ -68,13 +68,13 @@ shownibble:
 	jp c, isdigit
 
 	add a, 7
-isdigit:	
+isdigit:
 
 	ld e, a
 	ld c, 2
 	call bdos
 	ret
 
-this_is_the_end:	end
+this_is_the_end:	end other
 
 ;	End

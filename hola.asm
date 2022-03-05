@@ -1,7 +1,6 @@
 ;	hola.asm
 
-		
-   
+
 ;bdos:	equ 5
 
 	org 5

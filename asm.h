@@ -1,72 +1,86 @@
 // asm.h
-// Revision 15-apr-2008
 
 #include <iostream>
 #include <string>
-#include <vector>
-#include <map>
-#include <set>
-#include <deque>
 
-class Asm {
+#include "pasmotypes.h"
+
+class Tokenizer;
+
+class Asm
+{
 public:
-	Asm ();
+    Asm();
+    ~Asm();
 
-	// This is not a copy constructor, it creates a new
-	// instance copying only the options.
-	//explicit Asm (const Asm & a);
+    void verbose();
+    enum DebugType { NoDebug, DebugSecondPass, DebugAll };
+    void setdebugtype(DebugType type);
+    void errtostdout();
+    void setbase(address addr);
+    void caseinsensitive();
+    void autolocal();
+    void bracketonly();
+    void warn8080();
+    void set86();
+    void setpass(int npass);
+    void setpass3();
+    void setwerror();
 
-	~Asm ();
+    void showerrorinfo(std::ostream & os,
+        size_t nline, const std::string message) const;
 
-	void verbose ();
-	enum DebugType { NoDebug, DebugSecondPass, DebugAll };
-	DebugType debugtype;
-	void setdebugtype (DebugType type);
-	void errtostdout ();
-	void setbase (unsigned int addr);
-	void caseinsensitive ();
-	void autolocal ();
-	void bracketonly ();
-	void warn8080 ();
-	void set86 ();
-	void setpass3 ();
+    void addincludedir(const std::string & dirname);
+    void addpredef(const std::string & predef);
+    const std::string & getheadername() const;
+    void setheadername(const std::string & headername_n);
 
-	void addincludedir (const std::string & dirname);
-	void addpredef (const std::string & predef);
-	void setheadername (const std::string & headername_n);
+    void parseline(Tokenizer & tz);
+    void loadfile(const std::string & filename);
+    void processfile();
 
-	void loadfile (const std::string & filename);
-	void processfile ();
+    void emitobject(std::ostream & out);
+    void emitplus3dos(std::ostream & out);
 
-	void emitobject (std::ostream & out);
-	void emitplus3dos (std::ostream & out);
+    void emittap(std::ostream & out);
+    void emittrs(std::ostream & out);
+    void emittzx(std::ostream & out);
+    void emitcdt(std::ostream & out);
 
-	void emittap (std::ostream & out);
-	void emittzx (std::ostream & out);
-	void emitcdt (std::ostream & out);
+    void emittapbas(std::ostream & out);
+    void emittzxbas(std::ostream & out);
+    void emitcdtbas(std::ostream & out);
 
-	void emittapbas (std::ostream & out);
-	void emittzxbas (std::ostream & out);
-	void emitcdtbas (std::ostream & out);
+    void emithex(std::ostream & out);
+    void emitamsdos(std::ostream & out);
 
-	void emithex (std::ostream & out);
-	void emitamsdos (std::ostream & out);
+    void emitprl(std::ostream & out);
+    void emitcmd(std::ostream & out);
 
-	void emitprl (std::ostream & out);
-	void emitcmd (std::ostream & out);
+    void emitsdrel(std::ostream & out);
 
-	void emitmsx (std::ostream & out);
-	void dumppublic (std::ostream & out);
-	void dumpsymbol (std::ostream & out);
+    void emitmsx(std::ostream & out);
+    void dumppublic(std::ostream & out);
+    void dumpsymbol(std::ostream & out);
+
+    const byte * getmem() const;
+    byte peekbyte(address addr) const;
+    address peekword(address addr) const;
+    address getvalue(const std::string & var);
+    address getcodesize() const;
+    address getminused() const;
+    bool hasentrypoint() const;
+    address getentrypoint() const;
+    void writebincode(std::ostream & out) const;
 private:
-	Asm (const Asm & a); // Forbidden
-	void operator = (const Asm &); // Forbidden
+    Asm(const Asm & a); // Forbidden
+    void operator = (const Asm &); // Forbidden
 public:
-	// Make it public to simplify implementation.
-	class In;
-	friend class In;
+    // Make it public to simplify implementation.
+    class In;
+    friend class In;
 private:
-	In * pin;
+    In * pin;
 };
 
-// End of asm.h
+// End

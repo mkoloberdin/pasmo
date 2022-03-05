@@ -2,23 +2,26 @@
 #define INCLUDE_TZX_H
 
 // tzx.h
-// Revision 8-dec-2004
 
 #include <iostream>
 
 #include <stdlib.h>
 
+class Asm;
 
-namespace tzx {
+namespace tzx
+{
 
-void writefilehead (std::ostream & out);
+void writefilehead(std::ostream & out);
 
-void writestandardblockhead (std::ostream & out);
+void writestandardblockhead(std::ostream & out);
 
-void writeturboblockhead (std::ostream & out, size_t len);
+void writeturboblockhead(std::ostream & out, size_t len);
+
+void write_tzx_code(const Asm & as, std::ostream & out);
 
 } // namespace tzx
 
 #endif
 
-// End of tzx.h
+// End

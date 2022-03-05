@@ -80,7 +80,7 @@ showreg:
 
 	pop hl
 	pop bc
-	ret	
+	ret
 
 shownibble:
 	and 0Fh
@@ -90,7 +90,7 @@ shownibble:
 	jp c, isdigit
 
 	add a, 7
-isdigit:	
+isdigit:
 
 	ld e, a
 	ld c, 2

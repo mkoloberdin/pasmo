@@ -7,8 +7,8 @@
 
 
 	Pasmo, ensablador Z80 cruzado multiplataforma.
-	(C) 2004-2008 Julián Albo
-	Utilización y distribución permitida bajo la licencia GPL.
+	(C) 2004-2022 Julián Albo
+	Utilización y distribución permitida bajo la licencia GPL v.3.
 
 	Para descargar actualizaciones o obtener más información:
 	http://www.arrakis.es/~ninsesabe/pasmo/
@@ -113,7 +113,7 @@
 		-E
 		--equ	   -->	Predefine una etiqueta.
 
-		-8         
+		-8
 		--w8080    -->	Mostrar warning cuando se usan instrucciones
 				del z80 que no exsiten en el 8080.
 
@@ -136,13 +136,12 @@ Comentarios y críticas a: julian.notfound@gmail.com
 		*		*		*
 
 
-
 	ENGLISH.
 
 
 	Pasmo, multiplatform Z80 cross-assembler.
-	(C) 2004-2008 Julián Albo
-	Use and distribution allowed under the terms of the GPL license.
+	(C) 2004-2022 Julián Albo
+	Use and distribution allowed under the terms of the GPL license v.3.
 
 	To download updates or obtain more information:
 	http://www.arrakis.es/~ninsesabe/pasmo/

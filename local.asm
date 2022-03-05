@@ -8,7 +8,15 @@ conout	equ 2
 
 	jp hola
 
-exit	db "Hello, local world\r\n", 0
+;IF 1
+
+;fallo equ conout / noexiste
+;PROC
+;ENDP
+;MACRO testing
+;ENDM
+
+gexit	db "Hello, local world\r\n", 0
 
 showtext	proc
 	local hola, exit
@@ -28,7 +36,9 @@ exit	ret
 
 	endp
 
-hola	ld hl, exit
+never:
+
+hola	ld hl, gexit
 	call showtext
 	jp 0
 

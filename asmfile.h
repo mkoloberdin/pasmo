@@ -2,7 +2,6 @@
 #define INCLUDE_ASMFILE_H
 
 // asmfile.h
-// Revision 12-dec-2004
 
 #include "token.h"
 
@@ -10,41 +9,42 @@
 #include <fstream>
 #include <string>
 
-class AsmFile {
+class AsmFile
+{
 public:
-	AsmFile ();
-	AsmFile (const AsmFile & af);
-	~AsmFile ();
-	void addincludedir (const std::string & dirname);
-	void loadfile (const std::string & filename, bool nocase,
-		std::ostream & outverb, std::ostream& outerr);
-	size_t getline () const;
+    AsmFile();
+    AsmFile(const AsmFile & af);
+    ~AsmFile();
+    void addincludedir(const std::string & dirname);
+    void loadfile(size_t linepos, const std::string & filename, bool nocase,
+        std::ostream & outverb, std::ostream & outerr);
+    size_t getline() const;
+    void showerrorinfo(std::ostream & os,
+        size_t nline, const std::string message) const;
 protected:
-	void openis (std::ifstream & is, const std::string & filename,
-		std::ios::openmode mode) const;
-	void showlineinfo (std::ostream & os, size_t nline) const;
-	void showcurrentlineinfo (std::ostream & os) const;
-	bool getvalidline ();
-	bool passeof () const;
-	Tokenizer & getcurrentline ();
-	const std::string & getcurrenttext () const;
+    void openis(size_t linepos, std::ifstream & is,
+        const std::string & filename, std::ios::openmode mode) const;
+    void showwarning(std::ostream & os,
+        size_t nline, const std::string message) const;
+    bool getvalidline();
+    bool passeof() const;
+    Tokenizer & getcurrentline();
+    const std::string & getcurrenttext() const;
 
-	void setline (size_t line);
-	void setendline ();
-	void beginline ();
-	bool nextline ();
-	void prevline ();
+    void setline(size_t line);
+    void setendline();
+    void beginline();
+    bool nextline();
+    void prevline();
 private:
-	class In;
-	In * pin;
-	In & in ();
-	const In & in () const;
+    class In;
+    In * pin;
+    In & in();
+    const In & in() const;
 
-	static const size_t LINE_BEGIN= static_cast <size_t> (-1);
-	size_t currentline;
+    size_t currentline;
 };
-
 
 #endif
 
-// End of asmfile.h
+// End

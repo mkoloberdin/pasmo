@@ -2,57 +2,58 @@
 #define INCLUDE_TAP_H
 
 // tap.h
-// Revision 4-dec-2004
 
 #include "pasmotypes.h"
 
 #include <string>
 
+namespace tap
+{
 
-namespace tap {
-
-class CodeHeader {
+class CodeHeader
+{
 public:
-	CodeHeader (address init, address size, const std::string & filename);
-	void write (std::ostream & out) const;
-	address size () const { return sizeof (block); }
+    CodeHeader(address init, address size, const std::string & filename);
+    void write(std::ostream & out) const;
 private:
-	byte block [21];
+    byte block [21];
 };
 
-class CodeBlock {
+class CodeBlock
+{
 public:
-	CodeBlock (address sizen, const byte * datan);
-	void write (std::ostream & out) const;
-	address size () const;
+    CodeBlock(address sizen, const byte * datan);
+    void write(std::ostream & out) const;
 private:
-	address datasize;
-	const byte * data;
-	byte head [3];
-	byte check;
+    address datasize;
+    const byte * const data;
+    byte head [3];
+    byte check;
 };
 
-class BasicHeader {
+class BasicHeader
+{
 public:
-	BasicHeader (const std::string & basic);
-	void write (std::ostream & out) const;
+    BasicHeader(const std::string & basic);
+    void write(std::ostream & out) const;
 private:
-	byte block [21];
+    byte block [21];
 };
 
-class BasicBlock {
+class BasicBlock
+{
 public:
-	BasicBlock (const std::string & basicn);
-	void write (std::ostream & out) const;
+    BasicBlock(const std::string & basicn);
+    void write(std::ostream & out) const;
 private:
-	const std::string & basic;
-	address basicsize;
-	byte block [3];
-	byte check;
+    const std::string & basic;
+    address basicsize;
+    byte block [3];
+    byte check;
 };
 
 } // namespace tap
 
 #endif
 
-// End of tap.h
+// End

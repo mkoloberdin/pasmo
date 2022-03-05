@@ -1,3 +1,13 @@
+	Version 0.5.5
+
+Options --sdrel for sdcc linker .rel format and --trs for trs-80 cmd format.
+
+Put the entry address in the hex format end record.
+
+Fixed filename in AMSDOS header.
+
+IFDEF and IFNDEF
+
 	Version 0.5.4.beta2
 
 Added third pass option and automatic switch to it on phase errors.

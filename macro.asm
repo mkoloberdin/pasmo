@@ -3,14 +3,15 @@
 ; Following a sample of the documentation of Digital Research MAC.
 ; For use with CP/M.
 
+.Z80
+.8080
+
 reboot	equ 0
 tpa	equ 100h
 bdos	equ 5
 type	equ 2
 cr	equ 0Dh
 lf	equ 0Ah
-
-_hola
 
 chrout	macro
 	ld c, type

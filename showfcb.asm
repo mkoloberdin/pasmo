@@ -108,7 +108,7 @@ ext	ld e, (hl)
 HERE:
 	public HERE
 
-	public printchar	
+	public printchar
 printchar	push bc
 	push de
 	push hl

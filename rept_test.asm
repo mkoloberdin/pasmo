@@ -1,9 +1,8 @@
-;	rept.asm
-; Test of rept and irp directives.
+; Test of REPT and IRP
 
 ; Macro with rept and irp inside.
 hola	macro
-	local unused, unused2
+	local unused, unused2, unused3
 
 unused	rept 2
 	db 'Rept inside macro', 0
@@ -11,6 +10,16 @@ unused	rept 2
 
 unused2	irp ?reg, af,bc, de, hl
 	push ?reg
+	endm
+
+unused3 irp num, 1, 2, 3, 4, 5
+	if num = 1
+	.shift
+	endif
+	if num = 4
+	exitm
+	endif
+	db num
 	endm
 
 	endm	; hola

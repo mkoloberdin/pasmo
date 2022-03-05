@@ -20,6 +20,10 @@ value	equ FILLVALUE
 value	equ 0FFh
 	endif
 
+	if defined WITH_PAD
+	defs WITH_PAD, &CD
+	endif
+
 start
 
 	; Point to the screen bitmap.
@@ -27,6 +31,13 @@ start
 screen		equ defined CPC ? 0C000h : 04000h
 	; High word of end of screen
 endscreen	equ defined CPC ? 00h : 58h
+
+	ld a, value
+	ld (current), a
+
+	if defined LOOP
+again:
+	endif
 
 	if defined USEHL
 	ld hl, screen
@@ -38,11 +49,12 @@ other
 
 	; Fills an octet of the screen with the value specified.
 
+	ld a, (current)
 	if defined USEHL
-	ld (hl), value
+	ld (hl), a
 	inc hl
 	else
-	ld (ix), value
+	ld (ix), a
 	inc ix
 	endif
 
@@ -108,9 +120,17 @@ delay	dec bc
 	jr nz, other
 	endif
 
-	; And return to Basic.
-
+	if defined LOOP
+	ld a, (current)
+	inc a
+	ld (current), a
+	jp again
+	else
+	; Return to Basic.
 	ret
+	endif
+
+current	db 0
 
 	; Set the entry point, needed with the --tapbas option to autorun.
 	end start

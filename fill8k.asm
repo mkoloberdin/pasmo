@@ -41,7 +41,8 @@ j	defl (j + 1) mod 256
 
 	endm
 
-init:	rept 8
+;init:	rept 8
+	rept 8
 	fill1k
 	endm
 
