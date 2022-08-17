@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <stdexcept>
+#include <algorithm>
 
 using std::ifstream;
 using std::endl;
