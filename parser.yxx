@@ -334,6 +334,8 @@ inline void checkugly (Machine & mach, const Token & tok)
 
 %left '*' '/' TypeMOD '%' TypeSHL TypeSHR "<<" ">>"
 
+%left NEGATE
+
 
 %start pasmo_exp
 
@@ -3224,6 +3226,8 @@ base:
 		{ mach.addcode (OpOr); $$= value_0; }
 	| base .xor.   base %prec TypeXOR
 		{ mach.addcode (OpXor); $$= value_0; }
+        | '-'          base %prec NEGATE
+                {  mach.addcode (OpUnMinus); $$= value_0; }
 	| base "&&"    base
 		{ mach.addcode (OpBoolAnd); $$= value_0; }
 	| base "||"    base
